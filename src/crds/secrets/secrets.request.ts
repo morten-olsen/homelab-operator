@@ -51,7 +51,7 @@ class SecretRequest extends CustomResource<typeof secretRequestSpec> {
       }
     }
     if (current) {
-      console.log('secret already exists', current);
+      services.log.debug('secret already exists', { current });
       // TODO: Add update logic
       return;
     }
