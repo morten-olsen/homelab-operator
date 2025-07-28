@@ -1,13 +1,15 @@
-import { ApiException, Watch } from "@kubernetes/client-node";
-import { K8sService } from "../services/k8s.ts";
-import type { Services } from "../utils/service.ts";
-import { type CustomResource } from "./custom-resource.base.ts";
-import { CustomResourceRequest } from "./custom-resource.request.ts";
+import { ApiException, Watch } from '@kubernetes/client-node';
+
+import { K8sService } from '../services/k8s.ts';
+import type { Services } from '../utils/service.ts';
+
+import { type CustomResource } from './custom-resource.base.ts';
+import { CustomResourceRequest } from './custom-resource.request.ts';
 
 class CustomResourceRegistry {
   #services: Services;
-  #resources: Set<CustomResource<any>> = new Set();
-  #watchers: Map<string, AbortController> = new Map();
+  #resources = new Set<CustomResource<any>>();
+  #watchers = new Map<string, AbortController>();
 
   constructor(services: Services) {
     this.#services = services;
@@ -19,11 +21,11 @@ class CustomResourceRegistry {
 
   public getByKind = (kind: string) => {
     return Array.from(this.#resources).find((r) => r.kind === kind);
-  }
+  };
 
   public register = (resource: CustomResource<any>) => {
     this.#resources.add(resource);
-  }
+  };
 
   public unregister = (resource: CustomResource<any>) => {
     this.#resources.delete(resource);
@@ -33,7 +35,7 @@ class CustomResourceRegistry {
         this.#watchers.delete(kind);
       }
     });
-  }
+  };
 
   public watch = async () => {
     const k8sService = this.#services.get(K8sService);
@@ -46,7 +48,7 @@ class CustomResourceRegistry {
       const controller = await watcher.watch(path, {}, this.#onResourceEvent, this.#onError);
       this.#watchers.set(resource.kind, controller);
     }
-  }
+  };
 
   #onResourceEvent = async (type: string, obj: any) => {
     console.log(type, this.kinds);
@@ -79,12 +81,12 @@ class CustomResourceRegistry {
     await handler?.({
       request,
       services: this.#services,
-    })
-  }
+    });
+  };
 
   #onError = (error: any) => {
     console.error(error);
-  }
+  };
 
   public install = async (replace = false) => {
     const k8sService = this.#services.get(K8sService);
@@ -107,7 +109,7 @@ class CustomResourceRegistry {
         throw error;
       }
     }
-  }
+  };
 }
 
 export { CustomResourceRegistry };

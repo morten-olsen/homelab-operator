@@ -1,14 +1,15 @@
-import { type Static, type TSchema } from "@sinclair/typebox";
-import { GROUP } from "../utils/consts.ts";
-import type { Services } from "../utils/service.ts";
-import { statusSchema } from "./custom-resource.status.ts";
-import type { CustomResourceRequest } from "./custom-resource.request.ts";
+import { type TSchema } from '@sinclair/typebox';
 
+import { GROUP } from '../utils/consts.ts';
+import type { Services } from '../utils/service.ts';
+
+import { statusSchema } from './custom-resource.status.ts';
+import type { CustomResourceRequest } from './custom-resource.request.ts';
 
 type CustomResourceHandlerOptions<TSpec extends TSchema> = {
   request: CustomResourceRequest<TSpec>;
   services: Services;
-}
+};
 
 type CustomResourceConstructor<TSpec extends TSchema> = {
   kind: string;
@@ -17,23 +18,19 @@ type CustomResourceConstructor<TSpec extends TSchema> = {
     plural: string;
     singular: string;
   };
-}
+};
 
-abstract class CustomResource<
-  TSpec extends TSchema
-> {
+abstract class CustomResource<TSpec extends TSchema> {
   #options: CustomResourceConstructor<TSpec>;
 
   constructor(options: CustomResourceConstructor<TSpec>) {
     this.#options = options;
   }
 
+  public readonly version = 'v1';
+
   public get name() {
     return `${this.#options.names.plural}.${this.group}`;
-  }
-
-  public get version() {
-    return 'v1';
   }
 
   public get group() {
@@ -75,27 +72,28 @@ abstract class CustomResource<
           singular: this.#options.names.singular,
         },
         scope: 'Namespaced',
-        versions: [{
-          name: this.version,
-          served: true,
-          storage: true,
-          schema: {
-            openAPIV3Schema: {
-              type: 'object',
-              properties: {
-                spec: this.spec,
-                status: statusSchema as any,
-              }
-            }
+        versions: [
+          {
+            name: this.version,
+            served: true,
+            storage: true,
+            schema: {
+              openAPIV3Schema: {
+                type: 'object',
+                properties: {
+                  spec: this.spec,
+                  status: statusSchema,
+                },
+              },
+            },
+            subresources: {
+              status: {},
+            },
           },
-          subresources: {
-            status: {}
-          }
-        }]
-      }
-    }
-  }
+        ],
+      },
+    };
+  };
 }
-
 
 export { CustomResource, type CustomResourceConstructor, type CustomResourceHandlerOptions };

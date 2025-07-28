@@ -1,8 +1,10 @@
-import knex, { type Knex } from "knex";
-import { migrationSource } from "./migrations/migrations.ts";
-import { Services } from "../utils/service.ts";
-import { PostgresService } from "../services/postgres/postgres.service.ts";
-import { ConfigService } from "../services/config/config.ts";
+import knex, { type Knex } from 'knex';
+
+import { Services } from '../utils/service.ts';
+import { PostgresService } from '../services/postgres/postgres.service.ts';
+import { ConfigService } from '../services/config/config.ts';
+
+import { migrationSource } from './migrations/migrations.ts';
 
 const DATABASE_NAME = 'homelab';
 
@@ -43,15 +45,15 @@ class DatabaseService {
     await db.migrate.latest();
 
     return db;
-  }
+  };
 
   public getDb = async () => {
     if (!this.#knex) {
       this.#knex = this.#setup();
     }
     return this.#knex;
-  }
+  };
 }
 
-export { tableNames, type Table } from "./migrations/migrations.ts";
+export { tableNames, type Table } from './migrations/migrations.ts';
 export { DatabaseService };

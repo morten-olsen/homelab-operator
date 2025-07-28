@@ -1,15 +1,18 @@
-import { Type } from "@sinclair/typebox";
-import { CustomResource, type CustomResourceHandlerOptions } from "../../custom-resource/custom-resource.base.ts";
-import { K8sService } from "../../services/k8s.ts";
-import { ApiException, type V1Secret } from "@kubernetes/client-node";
+import { Type } from '@sinclair/typebox';
+import { ApiException, type V1Secret } from '@kubernetes/client-node';
+
+import { CustomResource, type CustomResourceHandlerOptions } from '../../custom-resource/custom-resource.base.ts';
+import { K8sService } from '../../services/k8s.ts';
 
 const stringValueSchema = Type.String({
   key: Type.String(),
   chars: Type.Optional(Type.String()),
   length: Type.Optional(Type.Number()),
-  encoding: Type.Optional(Type.String({
-    enum: ['utf-8', 'base64', 'base64url', 'hex'],
-  })),
+  encoding: Type.Optional(
+    Type.String({
+      enum: ['utf-8', 'base64', 'base64url', 'hex'],
+    }),
+  ),
   value: Type.Optional(Type.String()),
 });
 
@@ -71,11 +74,11 @@ class SecretRequest extends CustomResource<typeof secretRequestSpec> {
         type: 'Opaque',
         data: {
           // TODO: generate data from spec
-          'test': 'test',
+          test: 'test',
         },
       },
     });
-  }
+  };
 
   public update = async (options: CustomResourceHandlerOptions<typeof secretRequestSpec>) => {
     const { request } = options;
@@ -88,14 +91,14 @@ class SecretRequest extends CustomResource<typeof secretRequestSpec> {
         message: 'Secret created',
       });
       return await status.save();
-    } catch (error) {
+    } catch {
       status.setCondition('Ready', {
         status: 'False',
         reason: 'SecretNotCreated',
         message: 'Secret not created',
       });
     }
-  }
+  };
 }
 
 export { SecretRequest };

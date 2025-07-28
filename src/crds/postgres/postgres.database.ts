@@ -1,12 +1,12 @@
-import { Type } from "@sinclair/typebox";
-import { CustomResource, type CustomResourceHandlerOptions } from "../../custom-resource/custom-resource.base.ts";
-import { K8sService } from "../../services/k8s.ts";
-import { ApiException, type V1Secret } from "@kubernetes/client-node";
-import type { CustomResourceRequest } from "../../custom-resource/custom-resource.request.ts";
-import { PostgresService } from "../../services/postgres/postgres.service.ts";
+import { Type } from '@sinclair/typebox';
+import { ApiException, type V1Secret } from '@kubernetes/client-node';
 
-const postgresDatabaseSpecSchema = Type.Object({
-});
+import { CustomResource, type CustomResourceHandlerOptions } from '../../custom-resource/custom-resource.base.ts';
+import { K8sService } from '../../services/k8s.ts';
+import type { CustomResourceRequest } from '../../custom-resource/custom-resource.request.ts';
+import { PostgresService } from '../../services/postgres/postgres.service.ts';
+
+const postgresDatabaseSpecSchema = Type.Object({});
 
 class PostgresDatabase extends CustomResource<typeof postgresDatabaseSpecSchema> {
   constructor() {
@@ -51,7 +51,7 @@ class PostgresDatabase extends CustomResource<typeof postgresDatabaseSpecSchema>
       name: Buffer.from(`${metadata.namespace}_${metadata.name}`).toString('base64'),
       user: Buffer.from(metadata.name).toString('base64'),
       password: Buffer.from(crypto.randomUUID()).toString('base64'),
-    }
+    };
     const namespace = metadata.namespace ?? 'default';
 
     services.log.debug('Creating secret', { data });
@@ -77,7 +77,7 @@ class PostgresDatabase extends CustomResource<typeof postgresDatabaseSpecSchema>
     });
     services.log.debug('Secret created', { response });
     return response.data!;
-  }
+  };
 
   public update = async (options: CustomResourceHandlerOptions<typeof postgresDatabaseSpecSchema>) => {
     const { request, services } = options;
@@ -113,7 +113,7 @@ class PostgresDatabase extends CustomResource<typeof postgresDatabaseSpecSchema>
       services.log.error('Error updating PostgresRole', { error });
       return await status.save();
     }
-  }
+  };
 }
 
 export { PostgresDatabase };

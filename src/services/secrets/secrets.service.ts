@@ -1,2 +1,1 @@
-class SecretsService {
-}
+class SecretsService {}

@@ -5,7 +5,17 @@
   "private": true,
   "devDependencies": {
     "@types/bun": "latest",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "@eslint/eslintrc": "3.3.1",
+    "@eslint/js": "9.32.0",
+    "@pnpm/find-workspace-packages": "6.0.9",
+    "eslint": "9.32.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-prettier": "5.5.3",
+    "prettier": "3.6.2",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.38.0"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -22,5 +32,8 @@
     "onlyBuiltDependencies": [
       "sqlite3"
     ]
+  },
+  "scripts": {
+    "test:lint": "eslint"
   }
 }

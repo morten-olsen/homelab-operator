@@ -1,25 +1,27 @@
-import { Type, type Static } from "@sinclair/typebox";
+import { Type, type Static } from '@sinclair/typebox';
 
-type CustomResourceStatusType= Static<typeof statusSchema>;
+type CustomResourceStatusType = Static<typeof statusSchema>;
 
 const statusSchema = Type.Object({
   observedGeneration: Type.Number(),
-  conditions: Type.Array(Type.Object({
-    type: Type.String(),
-    status: Type.String({
-      enum: ['True', 'False', 'Unknown']
+  conditions: Type.Array(
+    Type.Object({
+      type: Type.String(),
+      status: Type.String({
+        enum: ['True', 'False', 'Unknown'],
+      }),
+      lastTransitionTime: Type.String(),
+      reason: Type.String(),
+      message: Type.String(),
     }),
-    lastTransitionTime: Type.String(),
-    reason: Type.String(),
-    message: Type.String(),
-  })),
+  ),
 });
 
 type CustomResourceStatusOptions = {
   status?: CustomResourceStatusType;
   generation: number;
   save: (status: CustomResourceStatusType) => Promise<void>;
-}
+};
 
 class CustomResourceStatus {
   #status: CustomResourceStatusType;
@@ -49,9 +51,12 @@ class CustomResourceStatus {
 
   public getCondition = (type: string) => {
     return this.#status.conditions?.find((condition) => condition.type === type)?.status;
-  }
+  };
 
-  public setCondition = (type: string, condition: Omit<CustomResourceStatusType['conditions'][number], 'type' | 'lastTransitionTime'>) => {
+  public setCondition = (
+    type: string,
+    condition: Omit<CustomResourceStatusType['conditions'][number], 'type' | 'lastTransitionTime'>,
+  ) => {
     const currentCondition = this.getCondition(type);
     const newCondition = {
       ...condition,
@@ -59,22 +64,22 @@ class CustomResourceStatus {
       lastTransitionTime: new Date().toISOString(),
     };
     if (currentCondition) {
-      this.#status.conditions = this.#status.conditions.map((c) => c.type === type ? newCondition : c);
+      this.#status.conditions = this.#status.conditions.map((c) => (c.type === type ? newCondition : c));
     } else {
       this.#status.conditions.push(newCondition);
     }
-  }
+  };
 
   public save = async () => {
     await this.#save({
       ...this.#status,
       observedGeneration: this.#generation,
     });
-  }
+  };
 
   public toJSON = () => {
     return this.#status;
-  }
+  };
 }
 
 export { CustomResourceStatus, statusSchema, type CustomResourceStatusType };

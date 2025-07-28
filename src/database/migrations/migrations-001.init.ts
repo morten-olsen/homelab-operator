@@ -1,9 +1,9 @@
-import type { Migration } from "./migrations.types.ts";
+import type { Migration } from './migrations.types.ts';
 
 const tableNames = {
   secrets: 'secrets',
   postgresRoles: 'postgres_roles',
-}
+};
 
 const init: Migration = {
   name: 'init',
@@ -27,13 +27,13 @@ const init: Migration = {
     await db.schema.dropTable(tableNames.secrets);
     await db.schema.dropTable(tableNames.postgresRoles);
   },
-}
+};
 
 type PostgresRoleRow = {
   name: string;
   namespace: string;
   password: string;
-}
+};
 
 type SecretRow = {
   name: string;
@@ -41,11 +41,11 @@ type SecretRow = {
   secretName: string;
   template: Record<string, unknown>;
   data: Record<string, string>;
-}
+};
 
 type Table = {
   secrets: SecretRow;
   postgresRoles: PostgresRoleRow;
-}
+};
 
 export { init, tableNames, type PostgresRoleRow, type SecretRow, type Table };
