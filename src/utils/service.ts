@@ -4,9 +4,6 @@ type Dependency<T> = new (services: Services) => T;
 
 class Services {
   #instances = new Map<Dependency<unknown>, unknown>();
-  constructor() {
-    console.log('Constructor', 'bar');
-  }
 
   public get log() {
     return this.get(LogService);
