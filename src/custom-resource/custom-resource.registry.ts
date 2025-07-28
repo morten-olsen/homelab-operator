@@ -51,7 +51,6 @@ class CustomResourceRegistry {
   };
 
   #onResourceEvent = async (type: string, obj: any) => {
-    console.log(type, this.kinds);
     const { kind } = obj;
     const crd = this.getByKind(kind);
     if (!crd) {
