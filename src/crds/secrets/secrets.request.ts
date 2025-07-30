@@ -1,10 +1,8 @@
 import { Type } from '@sinclair/typebox';
-import { ApiException, type V1Secret } from '@kubernetes/client-node';
 
 import { CustomResource, type CustomResourceHandlerOptions } from '../../custom-resource/custom-resource.base.ts';
-import { K8sService } from '../../services/k8s.ts';
 
-const stringValueSchema = Type.String({
+const stringValueSchema = Type.Object({
   key: Type.String(),
   chars: Type.Optional(Type.String()),
   length: Type.Optional(Type.Number()),
@@ -33,71 +31,18 @@ class SecretRequest extends CustomResource<typeof secretRequestSpec> {
     });
   }
 
-  #createSecret = async (options: CustomResourceHandlerOptions<typeof secretRequestSpec>) => {
-    const { request, services } = options;
-    const { apiVersion, kind, spec, metadata } = request;
-    const { secretName = metadata.name } = spec;
-    const { namespace = 'default' } = metadata;
-    const k8sService = services.get(K8sService);
-    let current: V1Secret | undefined;
-    try {
-      current = await k8sService.api.readNamespacedSecret({
-        name: secretName,
-        namespace,
-      });
-    } catch (error) {
-      if (!(error instanceof ApiException && error.code === 404)) {
-        throw error;
-      }
-    }
-    if (current) {
-      services.log.debug('secret already exists', { current });
-      // TODO: Add update logic
-      return;
-    }
-    await k8sService.api.createNamespacedSecret({
-      namespace,
-      body: {
-        kind: 'Secret',
-        metadata: {
-          name: secretName,
-          namespace,
-          ownerReferences: [
-            {
-              apiVersion,
-              kind,
-              name: metadata.name,
-              uid: metadata.uid,
-            },
-          ],
-        },
-        type: 'Opaque',
-        data: {
-          // TODO: generate data from spec
-          test: 'test',
-        },
-      },
-    });
-  };
-
   public update = async (options: CustomResourceHandlerOptions<typeof secretRequestSpec>) => {
-    const { request } = options;
-    const status = await request.getStatus();
-    try {
-      await this.#createSecret(options);
-      status.setCondition('Ready', {
-        status: 'True',
-        reason: 'SecretCreated',
-        message: 'Secret created',
-      });
-      return await status.save();
-    } catch {
-      status.setCondition('Ready', {
-        status: 'False',
-        reason: 'SecretNotCreated',
-        message: 'Secret not created',
-      });
-    }
+    const { request, ensureSecret } = options;
+    const { secretName = request.metadata.name } = request.spec;
+    const { namespace = request.metadata.namespace ?? 'default' } = request.metadata;
+    await ensureSecret({
+      name: secretName,
+      namespace,
+      schema: Type.Object({}, { additionalProperties: true }),
+      generator: async () => ({
+        hello: 'world',
+      }),
+    });
   };
 }
 

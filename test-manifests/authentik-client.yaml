@@ -1,0 +1,8 @@
+apiVersion: homelab.mortenolsen.pro/v1
+kind: AuthentikClient
+metadata:
+  name: foobas
+spec:
+  redirectUris:
+    - url: http://localhost:3000/api/auth/callback
+      matchingMode: strict

@@ -46,6 +46,6 @@ export default tseslint.config(
   },
   ...compat.extends('plugin:prettier/recommended'),
   {
-    ignores: ['**/node_modules/', '**/dist/', '**/.turbo/', '**/generated/'],
+    ignores: ['**/node_modules/', '**/dist/', '**/.turbo/', '**/generated/', '**/clients/*.types.ts'],
   },
 );

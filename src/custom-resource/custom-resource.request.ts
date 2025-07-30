@@ -1,15 +1,15 @@
-import type { Static, TSchema } from '@sinclair/typebox';
-import { ApiException, PatchStrategy, setHeaderOptions } from '@kubernetes/client-node';
+import { Type, type Static, type TSchema } from '@sinclair/typebox';
+import { ApiException, PatchStrategy, setHeaderOptions, V1MicroTime } from '@kubernetes/client-node';
 
 import type { Services } from '../utils/service.ts';
 import { K8sService } from '../services/k8s.ts';
+import { GROUP } from '../utils/consts.ts';
 
 import { CustomResourceRegistry } from './custom-resource.registry.ts';
-import { CustomResourceStatus, type CustomResourceStatusType } from './custom-resource.status.ts';
 
 type CustomResourceRequestOptions = {
   type: 'ADDED' | 'DELETED' | 'MODIFIED';
-  manifest: any;
+  manifest: ExpectedAny;
   services: Services;
 };
 
@@ -23,6 +23,30 @@ type CustomResourceRequestMetadata = Record<string, string> & {
   creationTimestamp: string;
   generation: number;
 };
+
+type CustomResourceEvent = {
+  reason: string;
+  message: string;
+  action: string;
+  type: 'Normal' | 'Warning' | 'Error';
+};
+
+const customResourceStatusSchema = Type.Object({
+  observedGeneration: Type.Number(),
+  conditions: Type.Array(
+    Type.Object({
+      type: Type.String(),
+      status: Type.String({
+        enum: ['True', 'False', 'Unknown'],
+      }),
+      lastTransitionTime: Type.String({ format: 'date-time' }),
+      reason: Type.Optional(Type.String()),
+      message: Type.Optional(Type.String()),
+    }),
+  ),
+});
+
+type CustomResourceStatus = Static<typeof customResourceStatusSchema>;
 
 class CustomResourceRequest<TSpec extends TSchema> {
   #options: CustomResourceRequestOptions;
@@ -59,10 +83,10 @@ class CustomResourceRequest<TSpec extends TSchema> {
     return this.#options.manifest.metadata;
   }
 
-  public isOwnerOf = (manifest: any) => {
+  public isOwnerOf = (manifest: ExpectedAny) => {
     const ownerRef = manifest?.metadata?.ownerReferences || [];
     return ownerRef.some(
-      (ref: any) =>
+      (ref: ExpectedAny) =>
         ref.apiVersion === this.apiVersion &&
         ref.kind === this.kind &&
         ref.name === this.metadata.name &&
@@ -70,11 +94,73 @@ class CustomResourceRequest<TSpec extends TSchema> {
     );
   };
 
-  public setStatus = async (status: CustomResourceStatusType) => {
+  public markSeen = async () => {
+    const { manifest } = this.#options;
+    await this.setStatus({
+      observedGeneration: manifest.metadata.generation,
+    });
+  };
+
+  public setCondition = async (condition: Omit<CustomResourceStatus['conditions'][number], 'lastTransitionTime'>) => {
+    const fullCondition = {
+      ...condition,
+      lastTransitionTime: new Date().toISOString(),
+    };
+    const current = await this.getCurrent();
+    const conditions: CustomResourceStatus['conditions'] = current?.status?.conditions || [];
+    const index = conditions.findIndex((c) => c.type === condition.type);
+    if (index === -1) {
+      conditions.push(fullCondition);
+    } else {
+      conditions[index] = fullCondition;
+    }
+    await this.setStatus({
+      conditions,
+    });
+  };
+
+  public getStatus = async () => {
+    const current = await this.getCurrent();
+    return current?.status as CustomResourceStatus | undefined;
+  };
+
+  public addEvent = async (event: CustomResourceEvent) => {
+    const { manifest, services } = this.#options;
+    const k8sService = services.get(K8sService);
+
+    await k8sService.eventsApi.createNamespacedEvent({
+      namespace: manifest.metadata.namespace,
+      body: {
+        kind: 'Event',
+        metadata: {
+          name: `${manifest.metadata.name}-${Date.now()}`,
+          namespace: manifest.metadata.namespace,
+        },
+        eventTime: new V1MicroTime(),
+        note: event.message,
+        action: event.action,
+        reason: event.reason,
+        type: event.type,
+        reportingController: GROUP,
+        reportingInstance: manifest.metadata.name,
+        regarding: {
+          apiVersion: manifest.apiVersion,
+          resourceVersion: manifest.metadata.resourceVersion,
+          kind: manifest.kind,
+          name: manifest.metadata.name,
+          namespace: manifest.metadata.namespace,
+          uid: manifest.metadata.uid,
+        },
+      },
+    });
+  };
+
+  public setStatus = async (status: Partial<CustomResourceStatus>) => {
     const { manifest, services } = this.#options;
     const { kind, metadata } = manifest;
     const registry = services.get(CustomResourceRegistry);
     const crd = registry.getByKind(kind);
+    const current = await this.getCurrent();
     if (!crd) {
       throw new Error(`Custom resource ${kind} not found`);
     }
@@ -90,7 +176,14 @@ class CustomResourceRequest<TSpec extends TSchema> {
         namespace,
         plural: crd.names.plural,
         name,
-        body: { status },
+        body: {
+          status: {
+            observedGeneration: manifest.metadata.generation,
+            conditions: current?.status?.conditions || [],
+            ...current?.status,
+            ...status,
+          },
+        },
         fieldValidation: 'Strict',
       },
       setHeaderOptions('Content-Type', PatchStrategy.MergePatch),
@@ -119,7 +212,7 @@ class CustomResourceRequest<TSpec extends TSchema> {
         kind: string;
         metadata: CustomResourceRequestMetadata;
         spec: Static<TSpec>;
-        status: CustomResourceStatusType;
+        status: CustomResourceStatus;
       };
     } catch (error) {
       if (error instanceof ApiException && error.code === 404) {
@@ -128,25 +221,6 @@ class CustomResourceRequest<TSpec extends TSchema> {
       throw error;
     }
   };
-
-  public getStatus = async () => {
-    const resource = await this.getCurrent();
-    if (!resource || !resource.status) {
-      return new CustomResourceStatus({
-        status: {
-          observedGeneration: 0,
-          conditions: [],
-        },
-        generation: 0,
-        save: this.setStatus,
-      });
-    }
-    return new CustomResourceStatus({
-      status: { ...resource.status, observedGeneration: resource.status.observedGeneration },
-      generation: resource.metadata.generation,
-      save: this.setStatus,
-    });
-  };
 }
 
-export { CustomResourceRequest };
+export { CustomResourceRequest, customResourceStatusSchema };

@@ -1,14 +1,15 @@
 import { ApiException, Watch } from '@kubernetes/client-node';
+import { type TObject } from '@sinclair/typebox';
 
 import { K8sService } from '../services/k8s.ts';
 import type { Services } from '../utils/service.ts';
+import { isSchemaValid } from '../utils/schemas.ts';
 
-import { type CustomResource } from './custom-resource.base.ts';
+import { type CustomResource, type EnsureSecretOptions } from './custom-resource.base.ts';
 import { CustomResourceRequest } from './custom-resource.request.ts';
-
 class CustomResourceRegistry {
   #services: Services;
-  #resources = new Set<CustomResource<any>>();
+  #resources = new Set<CustomResource<ExpectedAny>>();
   #watchers = new Map<string, AbortController>();
 
   constructor(services: Services) {
@@ -23,11 +24,11 @@ class CustomResourceRegistry {
     return Array.from(this.#resources).find((r) => r.kind === kind);
   };
 
-  public register = (resource: CustomResource<any>) => {
+  public register = (resource: CustomResource<ExpectedAny>) => {
     this.#resources.add(resource);
   };
 
-  public unregister = (resource: CustomResource<any>) => {
+  public unregister = (resource: CustomResource<ExpectedAny>) => {
     this.#resources.delete(resource);
     this.#watchers.forEach((controller, kind) => {
       if (kind === resource.kind) {
@@ -50,7 +51,70 @@ class CustomResourceRegistry {
     }
   };
 
-  #onResourceEvent = async (type: string, obj: any) => {
+  #ensureSecret =
+    (request: CustomResourceRequest<ExpectedAny>) =>
+    async <T extends TObject>(options: EnsureSecretOptions<T>) => {
+      const { schema, name, namespace, generator } = options;
+      const { metadata } = request;
+      const k8sService = this.#services.get(K8sService);
+      let exists = false;
+      try {
+        const secret = await k8sService.api.readNamespacedSecret({
+          name,
+          namespace,
+        });
+
+        exists = true;
+        if (secret?.data) {
+          const decoded = Object.fromEntries(
+            Object.entries(secret.data).map(([key, value]) => [key, Buffer.from(value, 'base64').toString('utf-8')]),
+          );
+          if (isSchemaValid(schema, decoded)) {
+            return decoded;
+          }
+        }
+      } catch (error) {
+        if (!(error instanceof ApiException && error.code === 404)) {
+          throw error;
+        }
+      }
+      const value = await generator();
+      const data = Object.fromEntries(
+        Object.entries(value).map(([key, value]) => [key, Buffer.from(value as string).toString('base64')]),
+      );
+      const body = {
+        kind: 'Secret',
+        metadata: {
+          name,
+          namespace,
+          ownerReferences: [
+            {
+              apiVersion: request.apiVersion,
+              kind: request.kind,
+              name: metadata.name,
+              uid: metadata.uid,
+            },
+          ],
+        },
+        type: 'Opaque',
+        data,
+      };
+      if (exists) {
+        await k8sService.api.replaceNamespacedSecret({
+          name,
+          namespace,
+          body,
+        });
+      } else {
+        const response = await k8sService.api.createNamespacedSecret({
+          namespace,
+          body,
+        });
+        return response.data;
+      }
+    };
+
+  #onResourceEvent = async (type: string, obj: ExpectedAny) => {
     const { kind } = obj;
     const crd = this.getByKind(kind);
     if (!crd) {
@@ -65,45 +129,101 @@ class CustomResourceRegistry {
     });
 
     const status = await request.getStatus();
-    if (status.observedGeneration === obj.metadata.generation) {
-      this.#services.log.debug('Skipping resource update', {
-        observedGeneration: status.observedGeneration,
-        generation: obj.metadata.generation,
-      });
-      return;
+    if (status && (type === 'ADDED' || type === 'MODIFIED')) {
+      if (status.observedGeneration === obj.metadata.generation) {
+        this.#services.log.debug('Skipping resource update', {
+          kind,
+          name: obj.metadata.name,
+          namespace: obj.metadata.namespace,
+          observedGeneration: status.observedGeneration,
+          generation: obj.metadata.generation,
+        });
+        return;
+      }
+    }
+
+    this.#services.log.debug('Updating resource', {
+      type,
+      kind,
+      name: obj.metadata.name,
+      namespace: obj.metadata.namespace,
+      observedGeneration: status?.observedGeneration,
+      generation: obj.metadata.generation,
+    });
+
+    if (type === 'ADDED' || type === 'MODIFIED') {
+      await request.markSeen();
     }
 
     if (type === 'ADDED' && crd.create) {
       handler = crd.create;
     }
 
-    await handler?.({
-      request,
-      services: this.#services,
-    });
+    try {
+      await handler?.({
+        request,
+        services: this.#services,
+        ensureSecret: this.#ensureSecret(request) as ExpectedAny,
+      });
+      if (type === 'ADDED' || type === 'MODIFIED') {
+        await request.setCondition({
+          type: 'Ready',
+          status: 'True',
+          message: 'Resource created',
+        });
+      }
+    } catch (error) {
+      let message = 'Unknown error';
+
+      if (error instanceof ApiException) {
+        message = error.body;
+        this.#services.log.error('Error handling resource', { reason: error.body });
+      } else if (error instanceof Error) {
+        message = error.message;
+        this.#services.log.error('Error handling resource', { reason: error.message });
+      } else {
+        message = String(error);
+        this.#services.log.error('Error handling resource', { reason: String(error) });
+      }
+      if (type === 'ADDED' || type === 'MODIFIED') {
+        await request.setCondition({
+          type: 'Ready',
+          status: 'False',
+          reason: 'Error',
+          message,
+        });
+      }
+    }
   };
 
-  #onError = (error: any) => {
-    console.error(error);
+  #onError = (error: ExpectedAny) => {
+    this.#services.log.error('Error watching resource', { error });
   };
 
   public install = async (replace = false) => {
     const k8sService = this.#services.get(K8sService);
     for (const crd of this.#resources) {
-      const manifest = crd.toManifest();
       try {
-        await k8sService.extensionsApi.createCustomResourceDefinition({
-          body: manifest,
-        });
-      } catch (error) {
-        if (error instanceof ApiException && error.code === 409) {
-          if (replace) {
-            await k8sService.extensionsApi.patchCustomResourceDefinition({
-              name: crd.name,
-              body: [{ op: 'replace', path: '/spec', value: manifest.spec }],
-            });
+        const manifest = crd.toManifest();
+        try {
+          await k8sService.extensionsApi.createCustomResourceDefinition({
+            body: manifest,
+          });
+        } catch (error) {
+          if (error instanceof ApiException && error.code === 409) {
+            if (replace) {
+              await k8sService.extensionsApi.patchCustomResourceDefinition({
+                name: crd.name,
+                body: [{ op: 'replace', path: '/spec', value: manifest.spec }],
+              });
+            }
+            continue;
           }
-          continue;
+          throw error;
+        }
+      } catch (error) {
+        if (error instanceof ApiException) {
+          throw new Error(`Failed to install ${crd.kind}: ${error.body}`);
         }
         throw error;
       }

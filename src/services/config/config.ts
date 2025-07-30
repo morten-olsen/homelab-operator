@@ -11,6 +11,17 @@ class ConfigService {
 
     return { host, user, password, port };
   }
+
+  public get authentik() {
+    const url = process.env.AUTHENTIK_URL;
+    const token = process.env.AUTHENTIK_TOKEN;
+
+    if (!url || !token) {
+      throw new Error('AUTHENTIK_URL and AUTHENTIK_TOKEN must be set');
+    }
+
+    return { url, token };
+  }
 }
 
 export { ConfigService };

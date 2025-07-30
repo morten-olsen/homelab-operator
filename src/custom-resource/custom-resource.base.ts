@@ -1,13 +1,20 @@
-import { type TSchema } from '@sinclair/typebox';
+import { type Static, type TObject, type TSchema } from '@sinclair/typebox';
 
 import { GROUP } from '../utils/consts.ts';
 import type { Services } from '../utils/service.ts';
 
-import { statusSchema } from './custom-resource.status.ts';
-import type { CustomResourceRequest } from './custom-resource.request.ts';
+import { customResourceStatusSchema, type CustomResourceRequest } from './custom-resource.request.ts';
+
+type EnsureSecretOptions<T extends TObject> = {
+  schema: T;
+  name: string;
+  namespace: string;
+  generator: () => Promise<Static<T>>;
+};
 
 type CustomResourceHandlerOptions<TSpec extends TSchema> = {
   request: CustomResourceRequest<TSpec>;
+  ensureSecret: <T extends TObject>(options: EnsureSecretOptions<T>) => Promise<Static<T>>;
   services: Services;
 };
 
@@ -82,7 +89,7 @@ abstract class CustomResource<TSpec extends TSchema> {
                 type: 'object',
                 properties: {
                   spec: this.spec,
-                  status: statusSchema,
+                  status: customResourceStatusSchema as ExpectedAny,
                 },
               },
             },
@@ -96,4 +103,4 @@ abstract class CustomResource<TSpec extends TSchema> {
   };
 }
 
-export { CustomResource, type CustomResourceConstructor, type CustomResourceHandlerOptions };
+export { CustomResource, type CustomResourceConstructor, type CustomResourceHandlerOptions, type EnsureSecretOptions };

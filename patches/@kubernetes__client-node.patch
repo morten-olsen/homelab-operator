@@ -1,0 +1,14 @@
+diff --git a/dist/gen/models/ObjectSerializer.js b/dist/gen/models/ObjectSerializer.js
+index 1d798b6a2d7c059165d1df9fbb77b89a8317ebca..c8bacfdc95be0f0146c6505f89a9372e013afea4 100644
+--- a/dist/gen/models/ObjectSerializer.js
++++ b/dist/gen/models/ObjectSerializer.js
+@@ -2216,6 +2216,9 @@ export class ObjectSerializer {
+             return transformedData;
+         }
+         else if (type === "Date") {
++            if (typeof data === "string") {
++                return data;
++            }
+             if (format == "date") {
+                 let month = data.getMonth() + 1;
+                 month = month < 10 ? "0" + month.toString() : month.toString();
