@@ -1,25 +1,25 @@
-import { type Static, type TObject, type TSchema } from '@sinclair/typebox';
+import { z, type ZodObject } from 'zod';
 
 import { GROUP } from '../utils/consts.ts';
 import type { Services } from '../utils/service.ts';
-import { noopAsync } from '../utils/types.js';
+import { noopAsync } from '../utils/types.ts';
 
 import { customResourceStatusSchema, type CustomResourceRequest } from './custom-resource.request.ts';
 
-type EnsureSecretOptions<T extends TObject> = {
+type EnsureSecretOptions<T extends ZodObject> = {
   schema: T;
   name: string;
   namespace: string;
-  generator: () => Promise<Static<T>>;
+  generator: () => Promise<z.infer<T>>;
 };
 
-type CustomResourceHandlerOptions<TSpec extends TSchema> = {
+type CustomResourceHandlerOptions<TSpec extends ZodObject> = {
   request: CustomResourceRequest<TSpec>;
-  ensureSecret: <T extends TObject>(options: EnsureSecretOptions<T>) => Promise<Static<T>>;
+  ensureSecret: <T extends ZodObject>(options: EnsureSecretOptions<T>) => Promise<z.infer<T>>;
   services: Services;
 };
 
-type CustomResourceConstructor<TSpec extends TSchema> = {
+type CustomResourceConstructor<TSpec extends ZodObject> = {
   kind: string;
   spec: TSpec;
   names: {
@@ -28,7 +28,7 @@ type CustomResourceConstructor<TSpec extends TSchema> = {
   };
 };
 
-abstract class CustomResource<TSpec extends TSchema> {
+abstract class CustomResource<TSpec extends ZodObject> {
   #options: CustomResourceConstructor<TSpec>;
 
   constructor(options: CustomResourceConstructor<TSpec>) {
@@ -89,8 +89,16 @@ abstract class CustomResource<TSpec extends TSchema> {
               openAPIV3Schema: {
                 type: 'object',
                 properties: {
-                  spec: this.spec,
-                  status: customResourceStatusSchema as ExpectedAny,
+                  spec: {
+                    ...z.toJSONSchema(this.spec.strict(), { io: 'input' }),
+                    $schema: undefined,
+                    additionalProperties: undefined,
+                  } as ExpectedAny,
+                  status: {
+                    ...z.toJSONSchema(customResourceStatusSchema.strict(), { io: 'input' }),
+                    $schema: undefined,
+                    additionalProperties: undefined,
+                  } as ExpectedAny,
                 },
               },
             },
@@ -104,7 +112,7 @@ abstract class CustomResource<TSpec extends TSchema> {
   };
 }
 
-const createCustomResource = <TSpec extends TSchema>(
+const createCustomResource = <TSpec extends ZodObject>(
   options: CustomResourceConstructor<TSpec> & {
     update?: (options: CustomResourceHandlerOptions<TSpec>) => Promise<void>;
     create?: (options: CustomResourceHandlerOptions<TSpec>) => Promise<void>;

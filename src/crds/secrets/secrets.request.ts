@@ -1,22 +1,18 @@
-import { Type } from '@sinclair/typebox';
+import { z } from 'zod';
 
 import { CustomResource, type CustomResourceHandlerOptions } from '../../custom-resource/custom-resource.base.ts';
 
-const stringValueSchema = Type.Object({
-  key: Type.String(),
-  chars: Type.Optional(Type.String()),
-  length: Type.Optional(Type.Number()),
-  encoding: Type.Optional(
-    Type.String({
-      enum: ['utf-8', 'base64', 'base64url', 'hex'],
-    }),
-  ),
-  value: Type.Optional(Type.String()),
+const stringValueSchema = z.object({
+  key: z.string(),
+  chars: z.string().optional(),
+  length: z.number().optional(),
+  encoding: z.enum(['utf-8', 'base64', 'base64url', 'hex']).optional(),
+  value: z.string().optional(),
 });
 
-const secretRequestSpec = Type.Object({
-  secretName: Type.Optional(Type.String()),
-  data: Type.Array(stringValueSchema),
+const secretRequestSpec = z.object({
+  secretName: z.string().optional(),
+  data: z.array(stringValueSchema),
 });
 
 class SecretRequest extends CustomResource<typeof secretRequestSpec> {
@@ -38,7 +34,7 @@ class SecretRequest extends CustomResource<typeof secretRequestSpec> {
     await ensureSecret({
       name: secretName,
       namespace,
-      schema: Type.Object({}, { additionalProperties: true }),
+      schema: z.object({}).passthrough(),
       generator: async () => ({
         hello: 'world',
       }),

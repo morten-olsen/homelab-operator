@@ -1,31 +1,21 @@
-import { Type } from '@sinclair/typebox';
 import { SubModeEnum } from '@goauthentik/api';
+import { z } from 'zod';
 
 import { CustomResource, type CustomResourceHandlerOptions } from '../../../custom-resource/custom-resource.base.ts';
 import { AuthentikService } from '../../../services/authentik/authentik.service.ts';
 
-const authentikClientSpec = Type.Object({
-  subMode: Type.Optional(Type.Unsafe<SubModeEnum>(Type.String())),
-  clientType: Type.Optional(
-    Type.Unsafe<'confidential' | 'public'>(
-      Type.String({
-        enum: ['confidential', 'public'],
-      }),
-    ),
-  ),
-  redirectUris: Type.Array(
-    Type.Object({
-      url: Type.String(),
-      matchingMode: Type.Unsafe<'strict' | 'regex'>(
-        Type.String({
-          enum: ['strict', 'regex'],
-        }),
-      ),
+const authentikClientSpec = z.object({
+  subMode: z.enum(SubModeEnum).optional(),
+  clientType: z.enum(['confidential', 'public']).optional(),
+  redirectUris: z.array(
+    z.object({
+      url: z.string(),
+      matchingMode: z.enum(['strict', 'regex']),
     }),
   ),
 });
-const authentikClientSecret = Type.Object({
-  clientSecret: Type.String(),
+const authentikClientSecret = z.object({
+  clientSecret: z.string(),
 });
 
 class AuthentikClient extends CustomResource<typeof authentikClientSpec> {

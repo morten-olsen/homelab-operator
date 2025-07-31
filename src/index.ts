@@ -29,6 +29,7 @@ process.on('uncaughtException', (error) => {
     return console.error(error.body);
   }
   console.error(error);
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (error) => {
@@ -41,4 +42,5 @@ process.on('unhandledRejection', (error) => {
     return console.error(error.body);
   }
   console.error(error);
+  process.exit(1);
 });

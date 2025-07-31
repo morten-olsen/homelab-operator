@@ -1,9 +1,9 @@
-import { Type } from '@sinclair/typebox';
+import { z } from 'zod';
 
 import { CustomResource, type CustomResourceHandlerOptions } from '../../custom-resource/custom-resource.base.ts';
 import { PostgresService } from '../../services/postgres/postgres.service.ts';
 
-const postgresDatabaseSpecSchema = Type.Object({});
+const postgresDatabaseSpecSchema = z.object({});
 
 class PostgresDatabase extends CustomResource<typeof postgresDatabaseSpecSchema> {
   constructor() {
@@ -22,10 +22,10 @@ class PostgresDatabase extends CustomResource<typeof postgresDatabaseSpecSchema>
     const variables = await ensureSecret({
       name: `postgres-database-${request.metadata.name}`,
       namespace: request.metadata.namespace ?? 'default',
-      schema: Type.Object({
-        name: Type.String(),
-        user: Type.String(),
-        password: Type.String(),
+      schema: z.object({
+        name: z.string(),
+        user: z.string(),
+        password: z.string(),
       }),
       generator: async () => ({
         name: `${request.metadata.namespace || 'default'}_${request.metadata.name}`,

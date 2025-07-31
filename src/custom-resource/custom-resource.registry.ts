@@ -1,12 +1,12 @@
 import { ApiException, Watch } from '@kubernetes/client-node';
-import { type TObject } from '@sinclair/typebox';
+import type { ZodObject } from 'zod';
 
 import { K8sService } from '../services/k8s.ts';
 import type { Services } from '../utils/service.ts';
-import { isSchemaValid } from '../utils/schemas.ts';
 
 import { type CustomResource, type EnsureSecretOptions } from './custom-resource.base.ts';
 import { CustomResourceRequest } from './custom-resource.request.ts';
+
 class CustomResourceRegistry {
   #services: Services;
   #resources = new Set<CustomResource<ExpectedAny>>();
@@ -53,7 +53,7 @@ class CustomResourceRegistry {
 
   #ensureSecret =
     (request: CustomResourceRequest<ExpectedAny>) =>
-    async <T extends TObject>(options: EnsureSecretOptions<T>) => {
+    async <T extends ZodObject>(options: EnsureSecretOptions<T>) => {
       const { schema, name, namespace, generator } = options;
       const { metadata } = request;
       const k8sService = this.#services.get(K8sService);
@@ -69,7 +69,7 @@ class CustomResourceRegistry {
           const decoded = Object.fromEntries(
             Object.entries(secret.data).map(([key, value]) => [key, Buffer.from(value, 'base64').toString('utf-8')]),
           );
-          if (isSchemaValid(schema, decoded)) {
+          if (schema.safeParse(decoded).success) {
             return decoded;
           }
         }
@@ -203,6 +203,7 @@ class CustomResourceRegistry {
   public install = async (replace = false) => {
     const k8sService = this.#services.get(K8sService);
     for (const crd of this.#resources) {
+      this.#services.log.info('Installing CRD', { kind: crd.kind });
       try {
         const manifest = crd.toManifest();
         try {

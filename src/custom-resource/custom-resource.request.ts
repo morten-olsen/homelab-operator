@@ -1,5 +1,5 @@
-import { Type, type Static, type TSchema } from '@sinclair/typebox';
 import { ApiException, PatchStrategy, setHeaderOptions, V1MicroTime } from '@kubernetes/client-node';
+import { z, type ZodObject } from 'zod';
 
 import type { Services } from '../utils/service.ts';
 import { K8sService } from '../services/k8s.ts';
@@ -31,24 +31,22 @@ type CustomResourceEvent = {
   type: 'Normal' | 'Warning' | 'Error';
 };
 
-const customResourceStatusSchema = Type.Object({
-  observedGeneration: Type.Number(),
-  conditions: Type.Array(
-    Type.Object({
-      type: Type.String(),
-      status: Type.String({
-        enum: ['True', 'False', 'Unknown'],
-      }),
-      lastTransitionTime: Type.String({ format: 'date-time' }),
-      reason: Type.Optional(Type.String()),
-      message: Type.Optional(Type.String()),
+const customResourceStatusSchema = z.object({
+  observedGeneration: z.number(),
+  conditions: z.array(
+    z.object({
+      type: z.string(),
+      status: z.enum(['True', 'False', 'Unknown']),
+      lastTransitionTime: z.string().datetime(),
+      reason: z.string().optional(),
+      message: z.string().optional(),
     }),
   ),
 });
 
-type CustomResourceStatus = Static<typeof customResourceStatusSchema>;
+type CustomResourceStatus = z.infer<typeof customResourceStatusSchema>;
 
-class CustomResourceRequest<TSpec extends TSchema> {
+class CustomResourceRequest<TSpec extends ZodObject> {
   #options: CustomResourceRequestOptions;
 
   constructor(options: CustomResourceRequestOptions) {
@@ -75,7 +73,7 @@ class CustomResourceRequest<TSpec extends TSchema> {
     return this.#options.manifest.apiVersion;
   }
 
-  public get spec(): Static<TSpec> {
+  public get spec(): z.infer<TSpec> {
     return this.#options.manifest.spec;
   }
 
@@ -211,7 +209,7 @@ class CustomResourceRequest<TSpec extends TSchema> {
         apiVersion: string;
         kind: string;
         metadata: CustomResourceRequestMetadata;
-        spec: Static<TSpec>;
+        spec: z.infer<TSpec>;
         status: CustomResourceStatus;
       };
     } catch (error) {
