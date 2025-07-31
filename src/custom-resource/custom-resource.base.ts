@@ -2,6 +2,7 @@ import { type Static, type TObject, type TSchema } from '@sinclair/typebox';
 
 import { GROUP } from '../utils/consts.ts';
 import type { Services } from '../utils/service.ts';
+import { noopAsync } from '../utils/types.js';
 
 import { customResourceStatusSchema, type CustomResourceRequest } from './custom-resource.request.ts';
 
@@ -103,4 +104,28 @@ abstract class CustomResource<TSpec extends TSchema> {
   };
 }
 
-export { CustomResource, type CustomResourceConstructor, type CustomResourceHandlerOptions, type EnsureSecretOptions };
+const createCustomResource = <TSpec extends TSchema>(
+  options: CustomResourceConstructor<TSpec> & {
+    update?: (options: CustomResourceHandlerOptions<TSpec>) => Promise<void>;
+    create?: (options: CustomResourceHandlerOptions<TSpec>) => Promise<void>;
+    delete?: (options: CustomResourceHandlerOptions<TSpec>) => Promise<void>;
+  },
+) => {
+  return class extends CustomResource<TSpec> {
+    constructor() {
+      super(options);
+    }
+
+    public update = options.update ?? noopAsync;
+    public create = options.create;
+    public delete = options.delete;
+  };
+};
+
+export {
+  CustomResource,
+  type CustomResourceConstructor,
+  type CustomResourceHandlerOptions,
+  type EnsureSecretOptions,
+  createCustomResource,
+};

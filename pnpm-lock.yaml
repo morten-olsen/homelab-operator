@@ -4,11 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  '@kubernetes/client-node':
-    hash: 0b0e5d32aa2930107c8c9b45df2639faf53fa12a389a551885d6e42d71f9429d
-    path: patches/@kubernetes__client-node.patch
-
 importers:
 
   .:
@@ -18,7 +13,7 @@ importers:
         version: 2025.6.3-1751754396
       '@kubernetes/client-node':
         specifier: ^1.3.0
-        version: 1.3.0(patch_hash=0b0e5d32aa2930107c8c9b45df2639faf53fa12a389a551885d6e42d71f9429d)(encoding@0.1.13)
+        version: 1.3.0(encoding@0.1.13)
       '@sinclair/typebox':
         specifier: ^0.34.38
         version: 0.34.38
@@ -40,6 +35,9 @@ importers:
       yaml:
         specifier: ^2.8.0
         version: 2.8.0
+      zod:
+        specifier: ^4.0.14
+        version: 4.0.14
     devDependencies:
       '@eslint/eslintrc':
         specifier: 3.3.1
@@ -2484,6 +2482,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@4.0.14:
+    resolution: {integrity: sha512-nGFJTnJN6cM2v9kXL+SOBq3AtjQby3Mv5ySGFof5UGRHrRioSJ5iG680cYNjE/yWk671nROcpPj4hAS8nyLhSw==}
+
 snapshots:
 
   '@babel/code-frame@7.27.1':
@@ -2566,7 +2567,7 @@ snapshots:
     dependencies:
       jsep: 1.4.0
 
-  '@kubernetes/client-node@1.3.0(patch_hash=0b0e5d32aa2930107c8c9b45df2639faf53fa12a389a551885d6e42d71f9429d)(encoding@0.1.13)':
+  '@kubernetes/client-node@1.3.0(encoding@0.1.13)':
     dependencies:
       '@types/js-yaml': 4.0.9
       '@types/node': 22.16.5
@@ -5275,3 +5276,5 @@ snapshots:
   yargs-parser@21.1.1: {}
 
   yocto-queue@0.1.0: {}
+
+  zod@4.0.14: {}

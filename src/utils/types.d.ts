@@ -3,4 +3,10 @@ declare global {
   type ExpectedAny = any;
 }
 
-export {};
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const noop = () => {};
+
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const noopAsync = async () => {};
+
+export { noop, noopAsync };
