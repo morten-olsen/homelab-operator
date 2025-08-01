@@ -7,21 +7,22 @@ import { SecretRequest } from './crds/secrets/secrets.request.ts';
 import { PostgresDatabase } from './crds/postgres/postgres.database.ts';
 import { AuthentikService } from './services/authentik/authentik.service.ts';
 import { AuthentikClient } from './crds/authentik/client/client.ts';
+import { Domain } from './crds/domain/domain/domain.ts';
+import { DomainEndpoint } from './crds/domain/endpoint/endpoint.ts';
 
 const services = new Services();
+
+//const authentikService = services.get(AuthentikService);
+//await authentikService.ready();
+
 const registry = services.get(CustomResourceRegistry);
 registry.register(new SecretRequest());
 registry.register(new PostgresDatabase());
 registry.register(new AuthentikClient());
+registry.register(new Domain());
+registry.register(new DomainEndpoint());
 await registry.install(true);
 await registry.watch();
-
-const authentikService = services.get(AuthentikService);
-await authentikService.upsertClient({
-  name: 'foo',
-  secret: 'foo',
-  redirectUris: [{ url: 'http://localhost:3000/api/auth/callback', matchingMode: 'strict' }],
-});
 
 process.on('uncaughtException', (error) => {
   console.log('UNCAUGHT EXCEPTION');

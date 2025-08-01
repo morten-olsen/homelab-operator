@@ -1,4 +1,22 @@
 class ConfigService {
+  public get istio() {
+    const gateway = process.env.ISTIO_GATEWAY;
+    if (!gateway) {
+      throw new Error('ISTIO_GATEWAY must be set');
+    }
+    return {
+      gateway: process.env.ISTIO_GATEWAY,
+    };
+  }
+
+  public get certManager() {
+    const certManager = process.env.CERT_MANAGER;
+    if (!certManager) {
+      throw new Error('CERT_MANAGER must be set');
+    }
+    return certManager;
+  }
+
   public get postgres() {
     const host = process.env.POSTGRES_HOST;
     const user = process.env.POSTGRES_USER;
@@ -10,17 +28,6 @@ class ConfigService {
     }
 
     return { host, user, password, port };
-  }
-
-  public get authentik() {
-    const url = process.env.AUTHENTIK_URL;
-    const token = process.env.AUTHENTIK_TOKEN;
-
-    if (!url || !token) {
-      throw new Error('AUTHENTIK_URL and AUTHENTIK_TOKEN must be set');
-    }
-
-    return { url, token };
   }
 }
 

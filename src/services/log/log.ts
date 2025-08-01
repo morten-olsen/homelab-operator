@@ -11,7 +11,10 @@ class LogService {
     console.warn(message, data);
   };
 
-  public error = (message: string, data?: Record<string, unknown>) => {
+  public error = (message: string, data?: Record<string, unknown>, root?: unknown) => {
+    if (root instanceof Error) {
+      console.log(root.stack);
+    }
     console.error(message, data);
   };
 }

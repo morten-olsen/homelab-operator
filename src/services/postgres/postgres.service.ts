@@ -7,8 +7,10 @@ import type { PostgresDatabase, PostgresRole } from './postgres.types.ts';
 
 class PostgresService {
   #db: Knex;
+  #services: Services;
 
   constructor(services: Services) {
+    this.#services = services;
     const configService = services.get(ConfigService);
     const config = configService.postgres;
     this.#db = knex({
@@ -20,6 +22,11 @@ class PostgresService {
         port: config.port,
       },
     });
+  }
+
+  public get config() {
+    const configService = this.#services.get(ConfigService);
+    return configService.postgres;
   }
 
   public upsertRole = async (role: PostgresRole) => {

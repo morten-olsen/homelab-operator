@@ -1,34 +1,36 @@
 import type { Services } from '../../utils/service.ts';
-import { ConfigService } from '../config/config.ts';
 import { createAuthentikClient, type AuthentikClient } from '../../clients/authentik/authentik.ts';
 
 import type { UpsertClientRequest, UpsertGroupRequest } from './authentik.types.ts';
+import { setupAuthentik } from './authentik.setup.ts';
 
 const DEFAULT_AUTHORIZATION_FLOW = 'default-provider-authorization-implicit-consent';
 const DEFAULT_INVALIDATION_FLOW = 'default-invalidation-flow';
 const DEFAULT_SCOPES = ['openid', 'email', 'profile', 'offline_access'];
 
 class AuthentikService {
-  #client: AuthentikClient;
   #services: Services;
+  #init?: Promise<AuthentikClient>;
 
   constructor(services: Services) {
-    const config = services.get(ConfigService);
-    this.#client = createAuthentikClient({
-      baseUrl: new URL('api/v3', config.authentik.url).toString(),
-      token: config.authentik.token,
-    });
     this.#services = services;
   }
 
-  public get url() {
-    const config = this.#services.get(ConfigService);
-    return config.authentik.url;
-  }
+  public getPublicUrl = async () => {
+    return '';
+  };
+
+  #getClient = () => {
+    if (!this.#init) {
+      this.#init = this.#create();
+    }
+    return this.#init;
+  };
 
   #upsertApplication = async (request: UpsertClientRequest, provider: number, pk?: string) => {
+    const client = await this.#getClient();
     if (!pk) {
-      return await this.#client.core.coreApplicationsCreate({
+      return await client.core.coreApplicationsCreate({
         applicationRequest: {
           name: request.name,
           slug: request.name,
@@ -36,7 +38,7 @@ class AuthentikService {
         },
       });
     }
-    return await this.#client.core.coreApplicationsUpdate({
+    return await client.core.coreApplicationsUpdate({
       slug: request.name,
       applicationRequest: {
         name: request.name,
@@ -62,8 +64,10 @@ class AuthentikService {
       .map((scope) => scopes.results.find((mapping) => mapping.scopeName === scope)?.pk)
       .filter(Boolean) as string[];
 
+    const client = await this.#getClient();
+
     if (!pk) {
-      return await this.#client.providers.providersOauth2Create({
+      return await client.providers.providersOauth2Create({
         oAuth2ProviderRequest: {
           name: request.name,
           clientId: request.name,
@@ -80,7 +84,7 @@ class AuthentikService {
         },
       });
     }
-    return await this.#client.providers.providersOauth2Update({
+    return await client.providers.providersOauth2Update({
       id: pk,
       oAuth2ProviderRequest: {
         name: request.name,
@@ -99,20 +103,31 @@ class AuthentikService {
     });
   };
 
+  #create = async () => {
+    const { url, token } = await setupAuthentik(this.#services);
+    return createAuthentikClient({
+      baseUrl: new URL('api/v3', url).toString(),
+      token: token,
+    });
+  };
+
   public getGroupFromName = async (name: string) => {
-    const groups = await this.#client.core.coreGroupsList({
+    const client = await this.#getClient();
+    const groups = await client.core.coreGroupsList({
       search: name,
     });
     return groups.results.find((group) => group.name === name);
   };
 
   public getScopePropertyMappings = async () => {
-    const mappings = await this.#client.propertymappings.propertymappingsProviderScopeList({});
+    const client = await this.#getClient();
+    const mappings = await client.propertymappings.propertymappingsProviderScopeList({});
     return mappings;
   };
 
   public getApplicationFromSlug = async (slug: string) => {
-    const applications = await this.#client.core.coreApplicationsList({
+    const client = await this.#getClient();
+    const applications = await client.core.coreApplicationsList({
       search: slug,
     });
     const application = applications.results.find((app) => app.slug === slug);
@@ -120,18 +135,21 @@ class AuthentikService {
   };
 
   public getProviderFromClientId = async (clientId: string) => {
-    const providers = await this.#client.providers.providersOauth2List({
+    const client = await this.#getClient();
+    const providers = await client.providers.providersOauth2List({
       clientId,
     });
     return providers.results.find((provider) => provider.clientId === clientId);
   };
 
   public getFlows = async () => {
-    const flows = await this.#client.flows.flowsInstancesList();
+    const client = await this.#getClient();
+    const flows = await client.flows.flowsInstancesList();
     return flows;
   };
 
   public upsertClient = async (request: UpsertClientRequest) => {
+    const url = await this.getPublicUrl();
     try {
       let provider = await this.getProviderFromClientId(request.name);
       provider = await this.#upsertProvider(request, provider?.pk);
@@ -160,16 +178,13 @@ class AuthentikService {
           provider: provider.pk,
         },
         urls: {
-          configuration: new URL(
-            `/application/o/${provider.name}/.well-known/openid-configuration`,
-            this.url,
-          ).toString(),
-          configurationIssuer: new URL(`/application/o/${provider.name}/`, this.url).toString(),
-          authorization: new URL(`/application/o/${provider.name}/authorize/`, this.url).toString(),
-          token: new URL(`/application/o/${provider.name}/token/`, this.url).toString(),
-          userinfo: new URL(`/application/o/${provider.name}/userinfo/`, this.url).toString(),
-          endSession: new URL(`/application/o/${provider.name}/end-session/`, this.url).toString(),
-          jwks: new URL(`/application/o/${provider.name}/jwks/`, this.url).toString(),
+          configuration: new URL(`/application/o/${provider.name}/.well-known/openid-configuration`, url).toString(),
+          configurationIssuer: new URL(`/application/o/${provider.name}/`, url).toString(),
+          authorization: new URL(`/application/o/${provider.name}/authorize/`, url).toString(),
+          token: new URL(`/application/o/${provider.name}/token/`, url).toString(),
+          userinfo: new URL(`/application/o/${provider.name}/userinfo/`, url).toString(),
+          endSession: new URL(`/application/o/${provider.name}/end-session/`, url).toString(),
+          jwks: new URL(`/application/o/${provider.name}/jwks/`, url).toString(),
         },
       };
       return { provider, application, config };
@@ -183,26 +198,28 @@ class AuthentikService {
 
   public deleteClient = async (name: string) => {
     const provider = await this.getProviderFromClientId(name);
+    const client = await this.#getClient();
     if (provider) {
-      await this.#client.providers.providersOauth2Destroy({ id: provider.pk });
+      await client.providers.providersOauth2Destroy({ id: provider.pk });
     }
     const application = await this.getApplicationFromSlug(name);
     if (application) {
-      await this.#client.core.coreApplicationsDestroy({ slug: application.name });
+      await client.core.coreApplicationsDestroy({ slug: application.name });
     }
   };
 
   public upsertGroup = async (request: UpsertGroupRequest) => {
     const group = await this.getGroupFromName(request.name);
+    const client = await this.#getClient();
     if (!group) {
-      await this.#client.core.coreGroupsCreate({
+      await client.core.coreGroupsCreate({
         groupRequest: {
           name: request.name,
           attributes: request.attributes,
         },
       });
     } else {
-      await this.#client.core.coreGroupsUpdate({
+      await client.core.coreGroupsUpdate({
         groupUuid: group.pk,
         groupRequest: {
           name: request.name,
@@ -210,6 +227,10 @@ class AuthentikService {
         },
       });
     }
+  };
+
+  public ready = async () => {
+    await this.#getClient();
   };
 }
 

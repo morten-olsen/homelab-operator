@@ -7,10 +7,24 @@ import type { Services } from '../utils/service.ts';
 import { type CustomResource, type EnsureSecretOptions } from './custom-resource.base.ts';
 import { CustomResourceRequest } from './custom-resource.request.ts';
 
+type ManifestCacheItem = {
+  kind: string;
+  namespace?: string;
+  name?: string;
+  manifest: CustomResourceRequest<ExpectedAny>;
+};
+
+type ManifestChangeOptions = {
+  crd: CustomResource<ExpectedAny>;
+  cacheKey: string;
+  manifest: ExpectedAny;
+};
+
 class CustomResourceRegistry {
   #services: Services;
   #resources = new Set<CustomResource<ExpectedAny>>();
   #watchers = new Map<string, AbortController>();
+  #cache = new Map<string, ManifestCacheItem>();
 
   constructor(services: Services) {
     this.#services = services;
@@ -53,112 +67,106 @@ class CustomResourceRegistry {
 
   #ensureSecret =
     (request: CustomResourceRequest<ExpectedAny>) =>
-    async <T extends ZodObject>(options: EnsureSecretOptions<T>) => {
-      const { schema, name, namespace, generator } = options;
-      const { metadata } = request;
-      const k8sService = this.#services.get(K8sService);
-      let exists = false;
-      try {
-        const secret = await k8sService.api.readNamespacedSecret({
-          name,
-          namespace,
-        });
+      async <T extends ZodObject>(options: EnsureSecretOptions<T>) => {
+        const { schema, name, namespace, generator } = options;
+        const { metadata } = request;
+        const k8sService = this.#services.get(K8sService);
+        let exists = false;
+        try {
+          const secret = await k8sService.api.readNamespacedSecret({
+            name,
+            namespace,
+          });
 
-        exists = true;
-        if (secret?.data) {
-          const decoded = Object.fromEntries(
-            Object.entries(secret.data).map(([key, value]) => [key, Buffer.from(value, 'base64').toString('utf-8')]),
-          );
-          if (schema.safeParse(decoded).success) {
-            return decoded;
+          exists = true;
+          if (secret?.data) {
+            const decoded = Object.fromEntries(
+              Object.entries(secret.data).map(([key, value]) => [key, Buffer.from(value, 'base64').toString('utf-8')]),
+            );
+            if (schema.safeParse(decoded).success) {
+              return decoded;
+            }
+          }
+        } catch (error) {
+          if (!(error instanceof ApiException && error.code === 404)) {
+            throw error;
           }
         }
-      } catch (error) {
-        if (!(error instanceof ApiException && error.code === 404)) {
-          throw error;
+        const value = await generator();
+        const data = Object.fromEntries(
+          Object.entries(value).map(([key, value]) => [key, Buffer.from(value as string).toString('base64')]),
+        );
+        const body = {
+          kind: 'Secret',
+          metadata: {
+            name,
+            namespace,
+            ownerReferences: [
+              {
+                apiVersion: request.apiVersion,
+                kind: request.kind,
+                name: metadata.name,
+                uid: metadata.uid,
+              },
+            ],
+          },
+          type: 'Opaque',
+          data,
+        };
+        if (exists) {
+          await k8sService.api.replaceNamespacedSecret({
+            name,
+            namespace,
+            body,
+          });
+        } else {
+          const response = await k8sService.api.createNamespacedSecret({
+            namespace,
+            body,
+          });
+          return response.data;
         }
-      }
-      const value = await generator();
-      const data = Object.fromEntries(
-        Object.entries(value).map(([key, value]) => [key, Buffer.from(value as string).toString('base64')]),
-      );
-      const body = {
-        kind: 'Secret',
-        metadata: {
-          name,
-          namespace,
-          ownerReferences: [
-            {
-              apiVersion: request.apiVersion,
-              kind: request.kind,
-              name: metadata.name,
-              uid: metadata.uid,
-            },
-          ],
-        },
-        type: 'Opaque',
-        data,
       };
-      if (exists) {
-        await k8sService.api.replaceNamespacedSecret({
-          name,
-          namespace,
-          body,
-        });
-      } else {
-        const response = await k8sService.api.createNamespacedSecret({
-          namespace,
-          body,
-        });
-        return response.data;
-      }
-    };
 
-  #onResourceEvent = async (type: string, obj: ExpectedAny) => {
-    const { kind } = obj;
-    const crd = this.getByKind(kind);
-    if (!crd) {
-      return;
-    }
+  public get objects() {
+    return Array.from(this.#cache.values());
+  }
 
-    let handler = type === 'DELETED' ? crd.delete : crd.update;
+  #onResourceUpdated = async (type: string, options: ManifestChangeOptions) => {
+    const { cacheKey, manifest, crd } = options;
+    const { kind, metadata } = manifest;
     const request = new CustomResourceRequest({
-      type: type as 'ADDED' | 'DELETED' | 'MODIFIED',
-      manifest: obj,
+      type: type as 'ADDED' | 'MODIFIED',
+      manifest: manifest,
       services: this.#services,
     });
-
+    this.#cache.set(cacheKey, {
+      kind,
+      manifest: request,
+    });
     const status = await request.getStatus();
     if (status && (type === 'ADDED' || type === 'MODIFIED')) {
-      if (status.observedGeneration === obj.metadata.generation) {
+      if (status.observedGeneration === metadata.generation) {
         this.#services.log.debug('Skipping resource update', {
           kind,
-          name: obj.metadata.name,
-          namespace: obj.metadata.namespace,
+          name: metadata.name,
+          namespace: metadata.namespace,
           observedGeneration: status.observedGeneration,
-          generation: obj.metadata.generation,
+          generation: metadata.generation,
         });
         return;
       }
     }
-
     this.#services.log.debug('Updating resource', {
       type,
       kind,
-      name: obj.metadata.name,
-      namespace: obj.metadata.namespace,
+      name: metadata.name,
+      namespace: metadata.namespace,
       observedGeneration: status?.observedGeneration,
-      generation: obj.metadata.generation,
+      generation: metadata.generation,
     });
-
-    if (type === 'ADDED' || type === 'MODIFIED') {
-      await request.markSeen();
-    }
-
-    if (type === 'ADDED' && crd.create) {
-      handler = crd.create;
-    }
-
+    await request.markSeen();
+    const handler = type === 'ADDED' && crd.create ? crd.create : crd.update;
     try {
       await handler?.({
         request,
@@ -177,13 +185,13 @@ class CustomResourceRegistry {
 
       if (error instanceof ApiException) {
         message = error.body;
-        this.#services.log.error('Error handling resource', { reason: error.body });
+        this.#services.log.error('Error handling resource', { reason: error.body }, error);
       } else if (error instanceof Error) {
         message = error.message;
-        this.#services.log.error('Error handling resource', { reason: error.message });
+        this.#services.log.error('Error handling resource', { reason: error.message }, error);
       } else {
         message = String(error);
-        this.#services.log.error('Error handling resource', { reason: String(error) });
+        this.#services.log.error('Error handling resource', { reason: String(error) }, error);
       }
       if (type === 'ADDED' || type === 'MODIFIED') {
         await request.setCondition({
@@ -193,6 +201,38 @@ class CustomResourceRegistry {
           message,
         });
       }
+    }
+  };
+
+  #onDelete = async (options: ManifestChangeOptions) => {
+    const { manifest, cacheKey } = options;
+    const { kind, metadata } = manifest;
+
+    this.#services.log.debug('Deleting resource', {
+      kind,
+      name: metadata.name,
+      namespace: metadata.namespace,
+      observedGeneration: manifest.status?.observedGeneration,
+      generation: metadata.generation,
+    });
+    this.#cache.delete(cacheKey);
+  };
+
+  #onResourceEvent = async (type: string, manifest: ExpectedAny) => {
+    const { kind, metadata } = manifest;
+    const { name, namespace } = metadata;
+    const cacheKey = [kind, name, namespace].join('___');
+    const crd = this.getByKind(kind);
+    if (!crd) {
+      return;
+    }
+
+    const input = { cacheKey, manifest, crd };
+
+    if (type === 'DELETE') {
+      await this.#onDelete(input);
+    } else {
+      await this.#onResourceUpdated(type, input);
     }
   };
 
