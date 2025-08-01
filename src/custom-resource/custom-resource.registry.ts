@@ -1,5 +1,5 @@
 import { ApiException, Watch } from '@kubernetes/client-node';
-import type { ZodObject } from 'zod';
+import type { z, ZodObject } from 'zod';
 
 import { K8sService } from '../services/k8s.ts';
 import type { Services } from '../utils/service.ts';
@@ -67,66 +67,66 @@ class CustomResourceRegistry {
 
   #ensureSecret =
     (request: CustomResourceRequest<ExpectedAny>) =>
-      async <T extends ZodObject>(options: EnsureSecretOptions<T>) => {
-        const { schema, name, namespace, generator } = options;
-        const { metadata } = request;
-        const k8sService = this.#services.get(K8sService);
-        let exists = false;
-        try {
-          const secret = await k8sService.api.readNamespacedSecret({
-            name,
-            namespace,
-          });
+    async <T extends ZodObject>(options: EnsureSecretOptions<T>): Promise<z.infer<T>> => {
+      const { schema, name, namespace, generator } = options;
+      const { metadata } = request;
+      const k8sService = this.#services.get(K8sService);
+      let exists = false;
+      try {
+        const secret = await k8sService.api.readNamespacedSecret({
+          name,
+          namespace,
+        });
 
-          exists = true;
-          if (secret?.data) {
-            const decoded = Object.fromEntries(
-              Object.entries(secret.data).map(([key, value]) => [key, Buffer.from(value, 'base64').toString('utf-8')]),
-            );
-            if (schema.safeParse(decoded).success) {
-              return decoded;
-            }
-          }
-        } catch (error) {
-          if (!(error instanceof ApiException && error.code === 404)) {
-            throw error;
+        exists = true;
+        if (secret?.data) {
+          const decoded = Object.fromEntries(
+            Object.entries(secret.data).map(([key, value]) => [key, Buffer.from(value, 'base64').toString('utf-8')]),
+          );
+          if (schema.safeParse(decoded).success) {
+            return decoded as z.infer<T>;
           }
         }
-        const value = await generator();
-        const data = Object.fromEntries(
-          Object.entries(value).map(([key, value]) => [key, Buffer.from(value as string).toString('base64')]),
-        );
-        const body = {
-          kind: 'Secret',
-          metadata: {
-            name,
-            namespace,
-            ownerReferences: [
-              {
-                apiVersion: request.apiVersion,
-                kind: request.kind,
-                name: metadata.name,
-                uid: metadata.uid,
-              },
-            ],
-          },
-          type: 'Opaque',
-          data,
-        };
-        if (exists) {
-          await k8sService.api.replaceNamespacedSecret({
-            name,
-            namespace,
-            body,
-          });
-        } else {
-          const response = await k8sService.api.createNamespacedSecret({
-            namespace,
-            body,
-          });
-          return response.data;
+      } catch (error) {
+        if (!(error instanceof ApiException && error.code === 404)) {
+          throw error;
         }
+      }
+      const value = await generator();
+      const data = Object.fromEntries(
+        Object.entries(value).map(([key, value]) => [key, Buffer.from(value as string).toString('base64')]),
+      );
+      const body = {
+        kind: 'Secret',
+        metadata: {
+          name,
+          namespace,
+          ownerReferences: [
+            {
+              apiVersion: request.apiVersion,
+              kind: request.kind,
+              name: metadata.name,
+              uid: metadata.uid,
+            },
+          ],
+        },
+        type: 'Opaque',
+        data,
       };
+      if (exists) {
+        await k8sService.api.replaceNamespacedSecret({
+          name,
+          namespace,
+          body,
+        });
+      } else {
+        await k8sService.api.createNamespacedSecret({
+          namespace,
+          body,
+        });
+      }
+      return value;
+    };
 
   public get objects() {
     return Array.from(this.#cache.values());
@@ -153,6 +153,11 @@ class CustomResourceRegistry {
           namespace: metadata.namespace,
           observedGeneration: status.observedGeneration,
           generation: metadata.generation,
+        });
+        await crd.reconcile?.({
+          request,
+          services: this.#services,
+          ensureSecret: this.#ensureSecret(request) as ExpectedAny,
         });
         return;
       }

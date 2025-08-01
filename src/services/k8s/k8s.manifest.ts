@@ -60,6 +60,10 @@ class Manifest<TSpec> {
     this.#options.manifest = obj;
   }
 
+  public get dependencyId() {
+    return `${this.metadata.uid}-${this.metadata.generation}`;
+  }
+
   public get kind(): string {
     return this.#options.manifest.kind;
   }

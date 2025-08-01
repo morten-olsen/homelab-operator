@@ -134,6 +134,25 @@ class K8sService {
       });
     }
   };
+
+  public getSecret = async <T extends Record<string, string>>(name: string, namespace?: string) => {
+    const current = await this.get<ExpectedAny>({
+      apiVersion: 'v1',
+      kind: 'Secret',
+      name,
+      namespace,
+    });
+
+    if (!current) {
+      return undefined;
+    }
+
+    const { data } = current.manifest || {};
+    const decodedData = Object.fromEntries(
+      Object.entries(data).map(([key, value]) => [key, Buffer.from(String(value), 'base64').toString('utf-8')]),
+    );
+    return decodedData as T;
+  };
 }
 
 export { K8sService };

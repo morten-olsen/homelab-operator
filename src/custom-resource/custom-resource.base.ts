@@ -2,7 +2,6 @@ import { z, type ZodObject } from 'zod';
 
 import { GROUP } from '../utils/consts.ts';
 import type { Services } from '../utils/service.ts';
-import { noopAsync } from '../utils/types.ts';
 
 import { customResourceStatusSchema, type CustomResourceRequest } from './custom-resource.request.ts';
 
@@ -61,9 +60,10 @@ abstract class CustomResource<TSpec extends ZodObject> {
     return this.#options.names;
   }
 
-  public abstract update(options: CustomResourceHandlerOptions<TSpec>): Promise<void>;
+  public update?(options: CustomResourceHandlerOptions<TSpec>): Promise<void>;
   public create?(options: CustomResourceHandlerOptions<TSpec>): Promise<void>;
   public delete?(options: CustomResourceHandlerOptions<TSpec>): Promise<void>;
+  public reconcile?(options: CustomResourceHandlerOptions<TSpec>): Promise<void>;
 
   public toManifest = () => {
     return {
@@ -124,7 +124,7 @@ const createCustomResource = <TSpec extends ZodObject>(
       super(options);
     }
 
-    public update = options.update ?? noopAsync;
+    public update = options.update;
     public create = options.create;
     public delete = options.delete;
   };

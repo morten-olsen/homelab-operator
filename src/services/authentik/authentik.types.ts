@@ -1,5 +1,13 @@
 import type { ClientTypeEnum, SubModeEnum } from '@goauthentik/api';
 
+type AuthentikServerInfo = {
+  url: {
+    internal: string;
+    external: string;
+  };
+  token: string;
+};
+
 type UpsertClientRequest = {
   name: string;
   secret: string;
@@ -26,4 +34,4 @@ type UpsertGroupRequest = {
   attributes?: Record<string, string[]>;
 };
 
-export type { UpsertClientRequest, UpsertGroupRequest };
+export type { AuthentikServerInfo, UpsertClientRequest, UpsertGroupRequest };

@@ -64,7 +64,8 @@ const DomainEndpoint = createCustomResource({
             route: [
               {
                 destination: {
-                  host: `${request.spec.destination.name}.${request.spec.destination.namespace || request.metadata.namespace || 'homelab'}.svc.cluster.local`,
+                  host: `${request.spec.destination.name}.${request.spec.destination.namespace || request.metadata.namespace || 'default'}.svc.cluster.local`,
+                  protocol: 'HTTP',
                   port: request.spec.destination.port,
                 },
               },

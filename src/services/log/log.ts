@@ -12,6 +12,15 @@ class LogService {
   };
 
   public error = (message: string, data?: Record<string, unknown>, root?: unknown) => {
+    if (root instanceof AggregateError) {
+      for (const error of root.errors) {
+        if (error instanceof Error) {
+          console.error(error.stack);
+        } else {
+          console.error(error);
+        }
+      }
+    }
     if (root instanceof Error) {
       console.log(root.stack);
     }

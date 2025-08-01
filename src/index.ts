@@ -5,24 +5,10 @@ import { CustomResourceRegistry } from './custom-resource/custom-resource.regist
 import { Services } from './utils/service.ts';
 import { SecretRequest } from './crds/secrets/secrets.request.ts';
 import { PostgresDatabase } from './crds/postgres/postgres.database.ts';
-import { AuthentikService } from './services/authentik/authentik.service.ts';
 import { AuthentikClient } from './crds/authentik/client/client.ts';
 import { Domain } from './crds/domain/domain/domain.ts';
 import { DomainEndpoint } from './crds/domain/endpoint/endpoint.ts';
-
-const services = new Services();
-
-//const authentikService = services.get(AuthentikService);
-//await authentikService.ready();
-
-const registry = services.get(CustomResourceRegistry);
-registry.register(new SecretRequest());
-registry.register(new PostgresDatabase());
-registry.register(new AuthentikClient());
-registry.register(new Domain());
-registry.register(new DomainEndpoint());
-await registry.install(true);
-await registry.watch();
+import { AuthentikServer } from './crds/authentik/server/server.ts';
 
 process.on('uncaughtException', (error) => {
   console.log('UNCAUGHT EXCEPTION');
@@ -45,3 +31,16 @@ process.on('unhandledRejection', (error) => {
   console.error(error);
   process.exit(1);
 });
+
+const services = new Services();
+const registry = services.get(CustomResourceRegistry);
+
+registry.register(new SecretRequest());
+registry.register(new PostgresDatabase());
+registry.register(new AuthentikServer());
+registry.register(new AuthentikClient());
+registry.register(new Domain());
+registry.register(new DomainEndpoint());
+
+await registry.install(true);
+await registry.watch();

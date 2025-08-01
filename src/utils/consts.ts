@@ -1,4 +1,10 @@
 const GROUP = 'homelab.mortenolsen.pro';
 const NAMESPACE = 'homelab';
 
-export { GROUP, NAMESPACE };
+const FIELDS = {
+  domain: {
+    domainId: `${GROUP}/domain-id`,
+  },
+};
+
+export { GROUP, NAMESPACE, FIELDS };
