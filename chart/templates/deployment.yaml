@@ -31,6 +31,67 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            # PostgreSQL Host
+            - name: POSTGRES_HOST
+              {{- if .Values.config.postgres.host.fromSecret.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.postgres.host.fromSecret.secretName }}
+                  key: {{ .Values.config.postgres.host.fromSecret.key }}
+              {{- else }}
+              value: {{ .Values.config.postgres.host.value | quote }}
+              {{- end }}
+            # PostgreSQL Port
+            - name: POSTGRES_PORT
+              {{- if .Values.config.postgres.port.fromSecret.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.postgres.port.fromSecret.secretName }}
+                  key: {{ .Values.config.postgres.port.fromSecret.key }}
+              {{- else }}
+              value: {{ .Values.config.postgres.port.value | quote }}
+              {{- end }}
+            # PostgreSQL User
+            - name: POSTGRES_USER
+              {{- if .Values.config.postgres.user.fromSecret.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.postgres.user.fromSecret.secretName }}
+                  key: {{ .Values.config.postgres.user.fromSecret.key }}
+              {{- else }}
+              value: {{ .Values.config.postgres.user.value | quote }}
+              {{- end }}
+            # PostgreSQL Password
+            - name: POSTGRES_PASSWORD
+              {{- if .Values.config.postgres.password.fromSecret.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.postgres.password.fromSecret.secretName }}
+                  key: {{ .Values.config.postgres.password.fromSecret.key }}
+              {{- else }}
+              value: {{ .Values.config.postgres.password.value | quote }}
+              {{- end }}
+            # Certificate Manager
+            - name: CERT_MANAGER
+              {{- if .Values.config.certManager.fromSecret.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.certManager.fromSecret.secretName }}
+                  key: {{ .Values.config.certManager.fromSecret.key }}
+              {{- else }}
+              value: {{ .Values.config.certManager.value | quote }}
+              {{- end }}
+            # Istio Gateway
+            - name: ISTIO_GATEWAY
+              {{- if .Values.config.istioGateway.fromSecret.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.config.istioGateway.fromSecret.secretName }}
+                  key: {{ .Values.config.istioGateway.fromSecret.key }}
+              {{- else }}
+              value: {{ .Values.config.istioGateway.value | quote }}
+              {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

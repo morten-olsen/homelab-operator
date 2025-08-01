@@ -51,3 +51,53 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Configuration for the homelab operator
+config:
+  # PostgreSQL database configuration
+  postgres:
+    host:
+      # Direct value (used when fromSecret.enabled is false)
+      value: "127.0.0.1"
+      # Secret reference (used when fromSecret.enabled is true)
+      fromSecret:
+        enabled: false
+        secretName: ""
+        key: "POSTGRES_HOST"
+    
+    port:
+      value: "5432"
+      fromSecret:
+        enabled: false
+        secretName: ""
+        key: "POSTGRES_PORT"
+    
+    user:
+      value: "postgres"
+      fromSecret:
+        enabled: false
+        secretName: ""
+        key: "POSTGRES_USER"
+    
+    password:
+      value: ""
+      fromSecret:
+        enabled: true  # Default to secret for sensitive data
+        secretName: "postgres-secret"
+        key: "POSTGRES_PASSWORD"
+  
+  # Certificate manager configuration
+  certManager:
+    value: "letsencrypt-prod"
+    fromSecret:
+      enabled: false
+      secretName: ""
+      key: "CERT_MANAGER"
+  
+  # Istio gateway configuration
+  istioGateway:
+    value: "istio-ingress"
+    fromSecret:
+      enabled: false
+      secretName: ""
+      key: "ISTIO_GATEWAY"
