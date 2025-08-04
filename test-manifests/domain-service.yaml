@@ -1,0 +1,12 @@
+apiVersion: homelab.mortenolsen.pro/v1
+kind: DomainService
+metadata:
+  name: homelab
+  namespace: homelab
+spec:
+  domain: homelab/homelab
+  subdomain: test
+  destination:
+    host: foo.svc.cluster.local
+    port:
+      number: 80

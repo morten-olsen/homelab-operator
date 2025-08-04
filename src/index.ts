@@ -1,14 +1,11 @@
 import 'dotenv/config';
 import { ApiException } from '@kubernetes/client-node';
 
-import { CustomResourceRegistry } from './custom-resource/custom-resource.registry.ts';
 import { Services } from './utils/service.ts';
-import { SecretRequest } from './crds/secrets/secrets.request.ts';
-import { PostgresDatabase } from './crds/postgres/postgres.database.ts';
-import { AuthentikClient } from './crds/authentik/client/client.ts';
-import { Domain } from './crds/domain/domain/domain.ts';
-import { DomainEndpoint } from './crds/domain/endpoint/endpoint.ts';
-import { AuthentikServer } from './crds/authentik/server/server.ts';
+import { CustomResourceService } from './services/custom-resources/custom-resources.ts';
+import { WatcherService } from './services/watchers/watchers.ts';
+import { IstioService } from './services/istio/istio.ts';
+import { customResources } from './custom-resouces/custom-resources.ts';
 
 process.on('uncaughtException', (error) => {
   console.log('UNCAUGHT EXCEPTION');
@@ -22,7 +19,6 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (error) => {
   console.log('UNHANDLED REJECTION');
   if (error instanceof Error) {
-    // show stack trace
     console.error(error.stack);
   }
   if (error instanceof ApiException) {
@@ -33,14 +29,57 @@ process.on('unhandledRejection', (error) => {
 });
 
 const services = new Services();
-const registry = services.get(CustomResourceRegistry);
+const watcherService = services.get(WatcherService);
+await watcherService
+  .create({
+    path: '/apis/apiextensions.k8s.io/v1/customresourcedefinitions',
+    list: async (k8s) => {
+      return await k8s.extensionsApi.listCustomResourceDefinition();
+    },
+    verbs: ['add', 'update', 'delete'],
+    transform: (manifest) => ({
+      apiVersion: 'apiextensions.k8s.io/v1',
+      kind: 'CustomResourceDefinition',
+      ...manifest,
+    }),
+  })
+  .start();
+await watcherService
+  .create({
+    path: '/api/v1/secrets',
+    list: async (k8s) => {
+      return await k8s.api.listSecretForAllNamespaces();
+    },
+    verbs: ['add', 'update', 'delete'],
+    transform: (manifest) => ({
+      apiVersion: 'v1',
+      kind: 'Secret',
+      ...manifest,
+    }),
+  })
+  .start();
+await watcherService
+  .create({
+    path: '/apis/apps/v1/deployments',
+    list: async (k8s) => {
+      return await k8s.apps.listDeploymentForAllNamespaces({});
+    },
+    verbs: ['add', 'update', 'delete'],
+    transform: (manifest) => ({
+      apiVersion: 'apps/v1',
+      kind: 'Deployment',
+      ...manifest,
+    }),
+  })
+  .start();
 
-registry.register(new SecretRequest());
-registry.register(new PostgresDatabase());
-registry.register(new AuthentikServer());
-registry.register(new AuthentikClient());
-registry.register(new Domain());
-registry.register(new DomainEndpoint());
+await watcherService.watchCustomGroup('networking.istio.io', 'v1', ['gateways', 'virtualservices', 'destinationrules']);
 
-await registry.install(true);
-await registry.watch();
+const istio = services.get(IstioService);
+await istio.start();
+
+const customResourceService = services.get(CustomResourceService);
+customResourceService.register(...customResources);
+
+await customResourceService.install(true);
+await customResourceService.watch();

@@ -1,0 +1,7 @@
+apiVersion: 'homelab.mortenolsen.pro/v1'
+kind: 'RedisConnection'
+metadata:
+  name: 'redis'
+  namespace: 'homelab'
+spec:
+  secret: redis/connection

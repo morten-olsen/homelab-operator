@@ -1,4 +1,4 @@
-const getWithNamespace = (input: string) => {
+const getWithNamespace = (input: string, defaultNamespace?: string) => {
   const result = input.split('/');
   const first = result.pop();
   if (!first) {
@@ -6,7 +6,7 @@ const getWithNamespace = (input: string) => {
   }
   return {
     name: first,
-    namespace: result.join('/'),
+    namespace: result.length > 0 ? result.join('/') : defaultNamespace,
   };
 };
 

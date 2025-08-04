@@ -1,5 +1,5 @@
 const GROUP = 'homelab.mortenolsen.pro';
-const NAMESPACE = 'homelab';
+const API_VERSION = `${GROUP}/v1`;
 
 const FIELDS = {
   domain: {
@@ -7,4 +7,10 @@ const FIELDS = {
   },
 };
 
-export { GROUP, NAMESPACE, FIELDS };
+const CONTROLLED_LABEL = {
+  [`${GROUP}/controlled`]: 'true',
+};
+
+const CONTROLLED_LABEL_SELECTOR = `${GROUP}/controlled=true`;
+
+export { GROUP, FIELDS, CONTROLLED_LABEL, CONTROLLED_LABEL_SELECTOR, API_VERSION };

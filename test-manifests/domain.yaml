@@ -1,0 +1,8 @@
+apiVersion: homelab.mortenolsen.pro/v1
+kind: Domain
+metadata:
+  name: homelab
+  namespace: homelab
+spec:
+  hostname: local.olsen.cloud
+  issuer: letsencrypt-prod

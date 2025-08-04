@@ -1,0 +1,116 @@
+{
+  "properties": {
+    "spec": {
+      "properties": {
+        "authentik": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        },
+        "clientType": {
+          "_enum": [
+            "confidential",
+            "public"
+          ],
+          "type": "string"
+        },
+        "redirectUris": {
+          "items": {
+            "type": "object",
+            "required": [
+              "url",
+              "matchingMode"
+            ],
+            "properties": {
+              "matchingMode": {
+                "type": "string",
+                "enum": [
+                  "strict",
+                  "regex"
+                ]
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "array"
+        },
+        "subMode": {
+          "_enum": [
+            "hashed_user_id",
+            "user_id",
+            "user_uuid",
+            "user_username",
+            "user_email",
+            "user_upn",
+            "11184809"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "authentik",
+        "redirectUris"
+      ],
+      "type": "object"
+    },
+    "status": {
+      "properties": {
+        "conditions": {
+          "items": {
+            "type": "object",
+            "required": [
+              "type",
+              "status",
+              "lastTransitionTime"
+            ],
+            "properties": {
+              "lastTransitionTime": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "message": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "True",
+                  "False",
+                  "Unknown"
+                ]
+              },
+              "type": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "array"
+        },
+        "observedGeneration": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "observedGeneration",
+        "conditions"
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object"
+}

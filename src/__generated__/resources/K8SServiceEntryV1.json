@@ -1,0 +1,345 @@
+{
+  "properties": {
+    "spec": {
+      "description": "Configuration affecting service registry. See more details at: https://istio.io/docs/reference/config/networking/service-entry.html",
+      "properties": {
+        "addresses": {
+          "description": "The virtual IP addresses associated with the service.",
+          "items": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "endpoints": {
+          "description": "One or more endpoints associated with the service.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "description": "Address associated with the network endpoint without the port.",
+                "type": "string",
+                "maxLength": 256,
+                "x-kubernetes-validations": [
+                  {
+                    "rule": "self.startsWith('unix://') ? (self.substring(7,8) == '/' || self.substring(7,8) == '@') : true",
+                    "message": "UDS must be an absolute path or abstract socket"
+                  },
+                  {
+                    "rule": "self.startsWith('unix://') ? !self.endsWith('/') : true",
+                    "message": "UDS may not be a dir"
+                  }
+                ]
+              },
+              "labels": {
+                "description": "One or more labels associated with the endpoint.",
+                "type": "object",
+                "maxProperties": 256,
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "locality": {
+                "description": "The locality associated with the endpoint.",
+                "type": "string",
+                "maxLength": 2048
+              },
+              "network": {
+                "description": "Network enables Istio to group endpoints resident in the same L3 domain/network.",
+                "type": "string",
+                "maxLength": 2048
+              },
+              "ports": {
+                "description": "Set of ports associated with the endpoint.",
+                "type": "object",
+                "maxProperties": 128,
+                "additionalProperties": {
+                  "type": "integer",
+                  "maximum": 4294967295,
+                  "minimum": 0,
+                  "x-kubernetes-validations": [
+                    {
+                      "rule": "0 < self && self <= 65535",
+                      "message": "port must be between 1-65535"
+                    }
+                  ]
+                },
+                "x-kubernetes-validations": [
+                  {
+                    "rule": "self.all(key, size(key) < 63 && key.matches('^[a-zA-Z0-9](?:[-a-zA-Z0-9]*[a-zA-Z0-9])?$'))",
+                    "message": "port name must be valid"
+                  }
+                ]
+              },
+              "serviceAccount": {
+                "description": "The service account associated with the workload if a sidecar is present in the workload.",
+                "type": "string",
+                "maxLength": 253
+              },
+              "weight": {
+                "description": "The load balancing weight associated with the endpoint.",
+                "type": "integer",
+                "maximum": 4294967295,
+                "minimum": 0
+              }
+            },
+            "x-kubernetes-validations": [
+              {
+                "rule": "has(self.address) || has(self.network)",
+                "message": "Address is required"
+              },
+              {
+                "rule": "(has(self.address) && self.address.startsWith('unix://')) ? !has(self.ports) : true",
+                "message": "UDS may not include ports"
+              }
+            ]
+          },
+          "maxItems": 4096,
+          "type": "array"
+        },
+        "exportTo": {
+          "description": "A list of namespaces to which this service is exported.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "hosts": {
+          "description": "The hosts associated with the ServiceEntry.",
+          "items": {
+            "type": "string",
+            "x-kubernetes-validations": [
+              {
+                "rule": "self != '*'",
+                "message": "hostname cannot be wildcard"
+              }
+            ]
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "type": "array"
+        },
+        "location": {
+          "description": "Specify whether the service should be considered external to the mesh or part of the mesh.\n\nValid Options: MESH_EXTERNAL, MESH_INTERNAL",
+          "_enum": [
+            "MESH_EXTERNAL",
+            "MESH_INTERNAL"
+          ],
+          "type": "string"
+        },
+        "ports": {
+          "description": "The ports associated with the external service.",
+          "items": {
+            "type": "object",
+            "required": [
+              "number",
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "description": "Label assigned to the port.",
+                "type": "string",
+                "maxLength": 256
+              },
+              "number": {
+                "description": "A valid non-negative integer port number.",
+                "type": "integer",
+                "maximum": 4294967295,
+                "minimum": 0,
+                "x-kubernetes-validations": [
+                  {
+                    "rule": "0 < self && self <= 65535",
+                    "message": "port must be between 1-65535"
+                  }
+                ]
+              },
+              "protocol": {
+                "description": "The protocol exposed on the port.",
+                "type": "string",
+                "maxLength": 256
+              },
+              "targetPort": {
+                "description": "The port number on the endpoint where the traffic will be received.",
+                "type": "integer",
+                "maximum": 4294967295,
+                "minimum": 0,
+                "x-kubernetes-validations": [
+                  {
+                    "rule": "0 < self && self <= 65535",
+                    "message": "port must be between 1-65535"
+                  }
+                ]
+              }
+            }
+          },
+          "maxItems": 256,
+          "type": "array",
+          "x_kubernetes_list_map_keys": [
+            "name"
+          ],
+          "x_kubernetes_list_type": "map",
+          "x_kubernetes_validations": [
+            {
+              "message": "port number cannot be duplicated",
+              "rule": "self.all(l1, self.exists_one(l2, l1.number == l2.number))"
+            }
+          ]
+        },
+        "resolution": {
+          "description": "Service resolution mode for the hosts.\n\nValid Options: NONE, STATIC, DNS, DNS_ROUND_ROBIN",
+          "_enum": [
+            "NONE",
+            "STATIC",
+            "DNS",
+            "DNS_ROUND_ROBIN"
+          ],
+          "type": "string"
+        },
+        "subjectAltNames": {
+          "description": "If specified, the proxy will verify that the server certificate's subject alternate name matches one of the specified values.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "workloadSelector": {
+          "description": "Applicable only for MESH_INTERNAL services.",
+          "properties": {
+            "labels": {
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 63,
+                "x-kubernetes-validations": [
+                  {
+                    "rule": "!self.contains('*')",
+                    "message": "wildcard is not supported in selector"
+                  }
+                ]
+              },
+              "description": "One or more labels that indicate a specific set of pods/VMs on which the configuration should be applied.",
+              "maxProperties": 256,
+              "type": "object"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "hosts"
+      ],
+      "type": "object",
+      "x_kubernetes_validations": [
+        {
+          "message": "only one of WorkloadSelector or Endpoints can be set",
+          "rule": "(has(self.workloadSelector)?1:0)+(has(self.endpoints)?1:0)<=1"
+        },
+        {
+          "message": "CIDR addresses are allowed only for NONE/STATIC resolution types",
+          "rule": "!(has(self.addresses) && self.addresses.exists(k, k.contains('/')) && (has(self.resolution) && self.resolution != 'STATIC' && self.resolution != 'NONE'))"
+        },
+        {
+          "message": "NONE mode cannot set endpoints",
+          "rule": "(!has(self.resolution) || self.resolution == 'NONE') ? !has(self.endpoints) : true"
+        },
+        {
+          "message": "DNS_ROUND_ROBIN mode cannot have multiple endpoints",
+          "rule": "(has(self.resolution) && self.resolution == 'DNS_ROUND_ROBIN') ? (!has(self.endpoints) || size(self.endpoints) == 1) : true"
+        }
+      ]
+    },
+    "status": {
+      "properties": {
+        "conditions": {
+          "description": "Current service state of the resource.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "lastProbeTime": {
+                "description": "Last time we probed the condition.",
+                "type": "string",
+                "format": "date-time"
+              },
+              "lastTransitionTime": {
+                "description": "Last time the condition transitioned from one status to another.",
+                "type": "string",
+                "format": "date-time"
+              },
+              "message": {
+                "description": "Human-readable message indicating details about last transition.",
+                "type": "string"
+              },
+              "reason": {
+                "description": "Unique, one-word, CamelCase reason for the condition's last transition.",
+                "type": "string"
+              },
+              "status": {
+                "description": "Status is the status of the condition.",
+                "type": "string"
+              },
+              "type": {
+                "description": "Type is the type of the condition.",
+                "type": "string"
+              }
+            }
+          },
+          "type": "array"
+        },
+        "observedGeneration": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "Resource Generation to which the Reconciled Condition refers.",
+          "x_kubernetes_int_or_string": true
+        },
+        "validationMessages": {
+          "description": "Includes any errors or warnings detected by Istio's analyzers.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "documentationUrl": {
+                "description": "A url pointing to the Istio documentation for this specific error type.",
+                "type": "string"
+              },
+              "level": {
+                "description": "Represents how severe a message is.\n\nValid Options: UNKNOWN, ERROR, WARNING, INFO",
+                "type": "string",
+                "enum": [
+                  "UNKNOWN",
+                  "ERROR",
+                  "WARNING",
+                  "INFO"
+                ]
+              },
+              "type": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "description": "A 7 character code matching `^IST[0-9]{4}$` intended to uniquely identify the message type.",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "A human-readable name for the message type.",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "type": "array"
+        }
+      },
+      "type": "object",
+      "x_kubernetes_preserve_unknown_fields": true
+    }
+  },
+  "required": [
+    "spec"
+  ],
+  "type": "object"
+}

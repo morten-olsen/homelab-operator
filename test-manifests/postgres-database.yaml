@@ -2,4 +2,6 @@ apiVersion: 'homelab.mortenolsen.pro/v1'
 kind: 'PostgresDatabase'
 metadata:
   name: 'test2'
-  namespace: 'playground'
+  namespace: 'homelab'
+spec:
+  connection: homelab/db
