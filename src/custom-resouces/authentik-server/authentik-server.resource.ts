@@ -36,9 +36,6 @@ class AuthentikServerResource extends CustomResource<typeof authentikServerSpecS
 
   constructor(options: CustomResourceOptions<typeof authentikServerSpecSchema>) {
     super(options);
-    const domainNames = getWithNamespace(this.spec.domain, this.namespace);
-    const databaseNames = getWithNamespace(this.spec.database, this.namespace);
-
     const resourceService = this.services.get(ResourceService);
     const secretService = this.services.get(SecretService);
 
@@ -76,7 +73,7 @@ class AuthentikServerResource extends CustomResource<typeof authentikServerSpecS
     });
 
     this.#secret = secretService.ensure({
-      name: this.name,
+      name: `authentik-server-${this.name}`,
       namespace: this.namespace,
       schema: authentikServerSecretSchema,
       generator: () => ({

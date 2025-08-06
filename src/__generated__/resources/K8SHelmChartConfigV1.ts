@@ -5,9 +5,63 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+/**
+ * HelmChartConfig represents additional configuration for the installation of Helm chart release.
+ * This resource is intended for use when additional configuration needs to be passed to a HelmChart
+ * that is managed by an external system.
+ */
 export interface K8SHelmChartConfigV1 {
+  /**
+   * APIVersion defines the versioned schema of this representation of an object.
+   * Servers should convert recognized schemas to the latest internal value, and
+   * may reject unrecognized values.
+   * More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+   */
+  apiVersion?: string;
+  /**
+   * Kind is a string value representing the REST resource this object represents.
+   * Servers may infer this from the endpoint the client submits requests to.
+   * Cannot be updated.
+   * In CamelCase.
+   * More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+   */
+  kind?: string;
+  metadata?: {};
+  /**
+   * HelmChartConfigSpec represents additional user-configurable details of an installed and configured Helm chart release.
+   * These fields are merged with or override the corresponding fields on the related HelmChart resource.
+   */
   spec?: {
+    /**
+     * Configures handling of failed chart installation or upgrades.
+     * - `reinstall` will perform a clean uninstall and reinstall of the chart.
+     * - `abort` will take no action and leave the chart in a failed state so that the administrator can manually resolve the error.
+     */
     failurePolicy?: string;
+    /**
+     * Override complex Chart values via inline YAML content.
+     * Helm CLI positional argument/flag: `--values`
+     */
     valuesContent?: string;
+    /**
+     * Override complex Chart values via references to external Secrets.
+     * Helm CLI positional argument/flag: `--values`
+     */
+    valuesSecrets?: {
+      /**
+       * Ignore changes to the secret, and mark the secret as optional.
+       * By default, the secret must exist, and changes to the secret will trigger an upgrade of the chart to apply the updated values.
+       * If `ignoreUpdates` is true, the secret is optional, and changes to the secret will not trigger an upgrade of the chart.
+       */
+      ignoreUpdates?: boolean;
+      /**
+       * Keys to read values content from. If no keys are specified, the secret is not used.
+       */
+      keys?: string[];
+      /**
+       * Name of the secret. Must be in the same namespace as the HelmChart resource.
+       */
+      name?: string;
+    }[];
   };
 }

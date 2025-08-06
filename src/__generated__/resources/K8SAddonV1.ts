@@ -5,9 +5,39 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+/**
+ * Addon is used to track application of a manifest file on disk. It mostly exists so that the wrangler DesiredSet
+ * Apply controller has an object to track as the owner, and ensure that all created resources are tracked when the
+ * manifest is modified or removed.
+ */
 export interface K8SAddonV1 {
+  /**
+   * APIVersion defines the versioned schema of this representation of an object.
+   * Servers should convert recognized schemas to the latest internal value, and
+   * may reject unrecognized values.
+   * More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+   */
+  apiVersion?: string;
+  /**
+   * Kind is a string value representing the REST resource this object represents.
+   * Servers may infer this from the endpoint the client submits requests to.
+   * Cannot be updated.
+   * In CamelCase.
+   * More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+   */
+  kind?: string;
+  metadata?: {};
+  /**
+   * Spec provides information about the on-disk manifest backing this resource.
+   */
   spec?: {
+    /**
+     * Checksum is the SHA256 checksum of the most recently successfully applied manifest file.
+     */
     checksum?: string;
+    /**
+     * Source is the Path on disk to the manifest file that this Addon tracks.
+     */
     source?: string;
   };
 }

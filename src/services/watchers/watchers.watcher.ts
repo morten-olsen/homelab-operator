@@ -1,4 +1,10 @@
-import { makeInformer, type Informer, type KubernetesListObject, type KubernetesObject } from '@kubernetes/client-node';
+import {
+  ApiException,
+  makeInformer,
+  type Informer,
+  type KubernetesListObject,
+  type KubernetesObject,
+} from '@kubernetes/client-node';
 import { EventEmitter } from 'eventemitter3';
 
 import { K8sService } from '../k8s/k8s.ts';
@@ -38,8 +44,10 @@ class Watcher<T extends KubernetesObject> extends EventEmitter<WatcherEvents<T>>
     informer.on('update', this.#handleResource.bind(this, 'update'));
     informer.on('delete', this.#handleResource.bind(this, 'delete'));
     informer.on('error', (err) => {
-      console.log('Watcher failed, will retry in 5 seconds', path, err);
-      setTimeout(this.start, 5000);
+      if (!(err instanceof ApiException && err.code === 404)) {
+        console.log('Watcher failed, will retry in 3 seconds', path, err);
+      }
+      setTimeout(this.start, 3000);
     });
     return informer;
   };

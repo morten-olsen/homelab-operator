@@ -180,15 +180,20 @@ class Resource<T extends KubernetesObject = UnknownResource> extends EventEmitte
   public patch = (patch: T) =>
     this.#queue.add(async () => {
       const { services } = this.#options;
+      services.log.debug(`Patching ${this.apiVersion}/${this.kind}/${this.namespace}/${this.name}`, {
+        specifier: this.specifier,
+        current: this.manifest,
+        patch,
+      });
       const k8s = services.get(K8sService);
       const body = {
         ...patch,
-        apiVersion: this.apiVersion,
-        kind: this.kind,
+        apiVersion: this.specifier.apiVersion,
+        kind: this.specifier.kind,
         metadata: {
-          name: this.name,
-          namespace: this.namespace,
           ...patch.metadata,
+          name: this.specifier.name,
+          namespace: this.specifier.namespace,
         },
       };
       try {
@@ -213,13 +218,14 @@ class Resource<T extends KubernetesObject = UnknownResource> extends EventEmitte
     this.#queue.add(async () => {
       try {
         const { services } = this.#options;
+        services.log.debug(`Deleting ${this.apiVersion}/${this.kind}/${this.namespace}/${this.name}`);
         const k8s = services.get(K8sService);
         await k8s.objectsApi.delete({
-          apiVersion: this.apiVersion,
-          kind: this.kind,
+          apiVersion: this.specifier.apiVersion,
+          kind: this.specifier.kind,
           metadata: {
-            name: this.name,
-            namespace: this.namespace,
+            name: this.specifier.name,
+            namespace: this.specifier.namespace,
           },
         });
         this.manifest = undefined;
@@ -237,11 +243,11 @@ class Resource<T extends KubernetesObject = UnknownResource> extends EventEmitte
       const k8s = services.get(K8sService);
       try {
         const manifest = await k8s.objectsApi.read({
-          apiVersion: this.apiVersion,
-          kind: this.kind,
+          apiVersion: this.specifier.apiVersion,
+          kind: this.specifier.kind,
           metadata: {
-            name: this.name,
-            namespace: this.namespace,
+            name: this.specifier.name,
+            namespace: this.specifier.namespace,
           },
         });
         this.manifest = manifest as T;
@@ -254,36 +260,39 @@ class Resource<T extends KubernetesObject = UnknownResource> extends EventEmitte
       }
     });
 
-  public addEvent = async (event: EventOptions) => {
-    const { services } = this.#options;
-    const k8sService = services.get(K8sService);
+  public addEvent = (event: EventOptions) =>
+    this.#queue.add(async () => {
+      const { services } = this.#options;
+      const k8sService = services.get(K8sService);
 
-    await k8sService.eventsApi.createNamespacedEvent({
-      namespace: this.namespace || 'default',
-      body: {
-        kind: 'Event',
-        metadata: {
-          name: `${this.name}-${Date.now()}-${Buffer.from(crypto.getRandomValues(new Uint8Array(8))).toString('hex')}`,
-          namespace: this.namespace,
+      services.log.debug(`Adding event ${this.apiVersion}/${this.kind}/${this.namespace}/${this.name}`, event);
+
+      await k8sService.eventsApi.createNamespacedEvent({
+        namespace: this.specifier.namespace || 'default',
+        body: {
+          kind: 'Event',
+          metadata: {
+            name: `${this.specifier.name}-${Date.now()}-${Buffer.from(crypto.getRandomValues(new Uint8Array(8))).toString('hex')}`,
+            namespace: this.specifier.namespace,
+          },
+          eventTime: new V1MicroTime(),
+          note: event.message,
+          action: event.action,
+          reason: event.reason,
+          type: event.type,
+          reportingController: GROUP,
+          reportingInstance: this.name,
+          regarding: {
+            apiVersion: this.specifier.apiVersion,
+            resourceVersion: this.metadata?.resourceVersion,
+            kind: this.specifier.kind,
+            name: this.specifier.name,
+            namespace: this.specifier.namespace,
+            uid: this.metadata?.uid,
+          },
         },
-        eventTime: new V1MicroTime(),
-        note: event.message,
-        action: event.action,
-        reason: event.reason,
-        type: event.type,
-        reportingController: GROUP,
-        reportingInstance: this.name,
-        regarding: {
-          apiVersion: this.apiVersion,
-          resourceVersion: this.metadata?.resourceVersion,
-          kind: this.kind,
-          name: this.name,
-          namespace: this.namespace,
-          uid: this.metadata?.uid,
-        },
-      },
+      });
     });
-  };
 }
 
 export { Resource, type UnknownResource, type ResourceEvents };

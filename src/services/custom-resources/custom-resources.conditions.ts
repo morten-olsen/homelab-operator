@@ -26,6 +26,7 @@ type Condition = {
 class CustomResourceConditions extends EventEmitter<CustomResourceConditionsEvents> {
   #options: CustomResourceStatusOptions;
   #conditions: Record<string, Condition>;
+  #changed: boolean;
 
   constructor(options: CustomResourceStatusOptions) {
     super();
@@ -40,6 +41,7 @@ class CustomResourceConditions extends EventEmitter<CustomResourceConditionsEven
       ]),
     );
     options.resource.on('changed', this.#handleChange);
+    this.#changed = false;
   }
 
   #handleChange = () => {
@@ -66,9 +68,16 @@ class CustomResourceConditions extends EventEmitter<CustomResourceConditionsEven
 
   public set = async (type: string, condition: Omit<Condition, 'lastTransitionTime'>) => {
     const current = this.#conditions[type];
+    const isEqual = equal(
+      { ...current, lastTransitionTime: undefined },
+      { ...condition, lastTransitionTime: undefined },
+    );
+    if (isEqual) {
+      return;
+    }
+    this.#changed = true;
     this.#conditions[type] = {
       ...condition,
-
       lastTransitionTime: current && current.status === condition.status ? current.lastTransitionTime : new Date(),
       observedGeneration: this.#options.resource.metadata?.generation,
     };
@@ -76,15 +85,24 @@ class CustomResourceConditions extends EventEmitter<CustomResourceConditionsEven
   };
 
   public save = async () => {
-    const { resource } = this.#options;
-    const status: CustomResourceStatus = {
-      conditions: Object.entries(this.#conditions).map(([type, condition]) => ({
-        ...condition,
-        type,
-        lastTransitionTime: condition.lastTransitionTime.toISOString(),
-      })),
-    };
-    await resource.patchStatus(status);
+    if (!this.#changed) {
+      return;
+    }
+    try {
+      this.#changed = false;
+      const { resource } = this.#options;
+      const status: CustomResourceStatus = {
+        conditions: Object.entries(this.#conditions).map(([type, condition]) => ({
+          ...condition,
+          type,
+          lastTransitionTime: condition.lastTransitionTime.toISOString(),
+        })),
+      };
+      await resource.patchStatus(status);
+    } catch (error) {
+      this.#changed = true;
+      throw error;
+    }
   };
 }
 

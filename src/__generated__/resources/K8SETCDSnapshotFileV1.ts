@@ -5,31 +5,124 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+/**
+ * ETCDSnapshot tracks a point-in-time snapshot of the etcd datastore.
+ */
 export interface K8SETCDSnapshotFileV1 {
+  /**
+   * APIVersion defines the versioned schema of this representation of an object.
+   * Servers should convert recognized schemas to the latest internal value, and
+   * may reject unrecognized values.
+   * More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+   */
+  apiVersion?: string;
+  /**
+   * Kind is a string value representing the REST resource this object represents.
+   * Servers may infer this from the endpoint the client submits requests to.
+   * Cannot be updated.
+   * In CamelCase.
+   * More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+   */
+  kind?: string;
+  metadata?: {};
+  /**
+   * Spec defines properties of an etcd snapshot file
+   */
   spec?: {
-    location?: string;
+    /**
+     * Location is the absolute file:// or s3:// URI address of the snapshot.
+     */
+    location: string;
+    /**
+     * Metadata contains point-in-time snapshot of the contents of the
+     * k3s-etcd-snapshot-extra-metadata ConfigMap's data field, at the time the
+     * snapshot was taken. This is intended to contain data about cluster state
+     * that may be important for an external system to have available when restoring
+     * the snapshot.
+     */
     metadata?: {
       [k: string]: string;
     };
-    nodeName?: string;
+    /**
+     * NodeName contains the name of the node that took the snapshot.
+     */
+    nodeName: string;
+    /**
+     * S3 contains extra metadata about the S3 storage system holding the
+     * snapshot. This is guaranteed to be set for all snapshots uploaded to S3.
+     * If not specified, the snapshot was not uploaded to S3.
+     */
     s3?: {
+      /**
+       * Bucket is the bucket holding the snapshot
+       */
       bucket?: string;
+      /**
+       * BucketLookup is the bucket lookup type, one of 'auto', 'dns', 'path'. Default if empty is 'auto'.
+       */
+      bucketLookup?: string;
+      /**
+       * Endpoint is the host or host:port of the S3 service
+       */
       endpoint?: string;
+      /**
+       * EndpointCA is the path on disk to the S3 service's trusted CA list. Leave empty to use the OS CA bundle.
+       */
       endpointCA?: string;
+      /**
+       * Insecure is true if the S3 service uses HTTP instead of HTTPS
+       */
       insecure?: boolean;
+      /**
+       * Prefix is the prefix in which the snapshot file is stored.
+       */
       prefix?: string;
+      /**
+       * Region is the region of the S3 service
+       */
       region?: string;
+      /**
+       * SkipSSLVerify is true if TLS certificate verification is disabled
+       */
       skipSSLVerify?: boolean;
     };
-    snapshotName?: string;
+    /**
+     * SnapshotName contains the base name of the snapshot file. CLI actions that act
+     * on snapshots stored locally or within a pre-configured S3 bucket and
+     * prefix usually take the snapshot name as their argument.
+     */
+    snapshotName: string;
   };
+  /**
+   * Status represents current information about a snapshot.
+   */
   status?: {
+    /**
+     * CreationTime is the timestamp when the snapshot was taken by etcd.
+     */
     creationTime?: string;
+    /**
+     * Error is the last observed error during snapshot creation, if any.
+     * If the snapshot is retried, this field will be cleared on success.
+     */
     error?: {
+      /**
+       * Message is a string detailing the encountered error during snapshot creation if specified.
+       * NOTE: message may be logged, and it should not contain sensitive information.
+       */
       message?: string;
+      /**
+       * Time is the timestamp when the error was encountered.
+       */
       time?: string;
     };
+    /**
+     * ReadyToUse indicates that the snapshot is available to be restored.
+     */
     readyToUse?: boolean;
-    size?: string;
+    /**
+     * Size is the size of the snapshot file, in bytes. If not specified, the snapshot failed.
+     */
+    size?: number | string;
   };
 }

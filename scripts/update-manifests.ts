@@ -1,16 +1,17 @@
+#!/usr/bin/env node
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { compile } from 'json-schema-to-typescript';
 
-import { K8sService } from '../services/k8s/k8s.ts';
-import { Services } from '../utils/service.ts';
+import { K8sService } from '../src/services/k8s/k8s.ts';
+import { Services } from '../src/utils/service.ts';
 
 const services = new Services();
 const k8s = services.get(K8sService);
 
 const manifests = await k8s.extensionsApi.listCustomResourceDefinition();
-const root = join(import.meta.dirname, '..', '__generated__', 'resources');
+const root = join(import.meta.dirname, '..', 'src', '__generated__', 'resources');
 
 await mkdir(root, { recursive: true });
 

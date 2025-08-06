@@ -1,0 +1,10 @@
+apiVersion: 'homelab.mortenolsen.pro/v1'
+kind: 'AuthentikClient'
+metadata:
+  name: homelab
+  namespace: homelab
+spec:
+  server: homelab
+  redirectUris:
+    - url: http://localhost:3000/api/v1/authentik/oauth2/callback
+      matchingMode: strict

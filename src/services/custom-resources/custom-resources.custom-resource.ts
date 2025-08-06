@@ -50,6 +50,13 @@ abstract class CustomResource<TSpec extends ZodObject> extends EventEmitter<Cust
     options.resource.on('changed', this.#handleChanged);
     this.#queue = new CoalescingQueued({
       action: async () => {
+        if (this.exists && !this.isValidSpec) {
+          this.services.log.error(
+            `Invalid spec for ${this.apiVersion}/${this.kind}/${this.namespace}/${this.name}`,
+            this.spec,
+          );
+          return;
+        }
         console.log('Reconcileing', this.apiVersion, this.kind, this.namespace, this.name);
         await this.reconcile?.();
       },
@@ -75,19 +82,11 @@ abstract class CustomResource<TSpec extends ZodObject> extends EventEmitter<Cust
   }
 
   public get apiVersion() {
-    const apiVersion = this.resource.apiVersion;
-    if (!apiVersion) {
-      throw new Error('Custom resources needs an apiVersion');
-    }
-    return apiVersion;
+    return this.resource.apiVersion;
   }
 
   public get kind() {
-    const kind = this.resource.kind;
-    if (!kind) {
-      throw new Error('Custom resources needs a kind');
-    }
-    return kind;
+    return this.resource.kind;
   }
 
   public get metadata() {
@@ -107,7 +106,7 @@ abstract class CustomResource<TSpec extends ZodObject> extends EventEmitter<Cust
   }
 
   public get namespace() {
-    const namespace = this.metadata.namespace;
+    const namespace = this.resource.specifier.namespace;
     if (!namespace) {
       throw new Error('Custom resources needs a namespace');
     }
