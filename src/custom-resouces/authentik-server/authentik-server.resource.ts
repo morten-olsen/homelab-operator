@@ -1,6 +1,5 @@
 import type { V1Service, V1Deployment, V1Secret } from '@kubernetes/client-node';
 import { z } from 'zod';
-import deepEqual from 'deep-equal';
 
 import {
   CustomResource,
@@ -19,6 +18,7 @@ import { SecretService } from '../../services/secrets/secrets.ts';
 import { decodeSecret } from '../../utils/secrets.ts';
 import type { postgresDatabaseSecretSchema } from '../postgres-database/postgres-database.resource.ts';
 import type { redisConnectionSpecSchema } from '../redis-connection/redis-connection.schemas.ts';
+import { isDeepSubset } from '../../utils/objects.ts';
 
 import { authentikServerSecretSchema, type authentikServerSpecSchema } from './authentik-server.scemas.ts';
 import { createDomainService, createManifest, createServiceManifest } from './authentik-server.create-manifests.ts';
@@ -222,7 +222,7 @@ class AuthentikServerResource extends CustomResource<typeof authentikServerSpecS
         password: databaseSecret.password,
       },
     });
-    if (!deepEqual(this.#deploymentWorkerResource.spec, manifest.spec)) {
+    if (!isDeepSubset(this.#deploymentWorkerResource.spec, manifest.spec)) {
       await this.#deploymentWorkerResource.patch(manifest);
       return {
         ready: false,
@@ -296,7 +296,7 @@ class AuthentikServerResource extends CustomResource<typeof authentikServerSpecS
         password: databaseSecret.password,
       },
     });
-    if (!deepEqual(this.#deploymentServerResource.spec, manifest.spec)) {
+    if (!isDeepSubset(this.#deploymentServerResource.spec, manifest.spec)) {
       await this.#deploymentServerResource.patch(manifest);
       return {
         ready: false,
@@ -317,7 +317,7 @@ class AuthentikServerResource extends CustomResource<typeof authentikServerSpecS
       appName: this.#serverName,
     });
 
-    if (!deepEqual(this.#service.manifest, manifest.spec)) {
+    if (!isDeepSubset(manifest.spec, this.#service.manifest)) {
       await this.#service.patch(manifest);
       return {
         ready: false,
@@ -337,9 +337,9 @@ class AuthentikServerResource extends CustomResource<typeof authentikServerSpecS
       owner: this.ref,
       domain: this.spec.domain,
       host: `${this.name}.${this.namespace}.svc.cluster.local`,
-      subdomain: 'authentik',
+      subdomain: this.spec.subdomain,
     });
-    if (!deepEqual(manifest.spec, this.#domainServiceResource.spec)) {
+    if (!isDeepSubset(manifest.spec, this.#domainServiceResource.spec)) {
       await this.#domainServiceResource.patch(manifest);
       return {
         ready: false,

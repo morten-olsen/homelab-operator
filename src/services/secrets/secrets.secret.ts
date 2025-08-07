@@ -33,6 +33,14 @@ class EnsuredSecret<T extends ZodObject> {
     this.#handleChanged();
   }
 
+  public get name() {
+    return this.#options.name;
+  }
+
+  public get namespace() {
+    return this.#options.namespace;
+  }
+
   public get resouce() {
     return this.#resource;
   }

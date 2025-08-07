@@ -1,9 +1,10 @@
 apiVersion: 'homelab.mortenolsen.pro/v1'
 kind: 'AuthentikServer'
 metadata:
-  name: homelab
+  name: authentik
   namespace: homelab
 spec:
   domain: homelab
-  database: test2
+  subdomain: authentik
+  database: postgres
   redis: redis

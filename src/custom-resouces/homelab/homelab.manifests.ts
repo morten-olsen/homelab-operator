@@ -257,12 +257,13 @@ const localStorageManifest = (options: LocalStorageManifestOptions): KubernetesO
       values: {
         storageClass: {
           name: 'local-path',
+          provisionerName: 'rancher.io/local-path',
           defaultClass: true,
         },
         nodePathMap: [
           {
             node: 'DEFAULT_PATH_FOR_NON_LISTED_NODES',
-            path: options.storagePath,
+            paths: [options.storagePath],
           },
         ],
         helper: {

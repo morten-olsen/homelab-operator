@@ -186,10 +186,10 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
   };
 
   public reconcile = async () => {
-    this.#updateSecret();
     if (!this.exists || this.metadata.deletionTimestamp) {
       return;
     }
+    this.#updateSecret();
     await Promise.allSettled([
       await this.reconcileSubresource(DATABASE_READY_CONDITION, this.#reconcileDatabase),
       await this.reconcileSubresource(SECRET_READY_CONDITION, this.#reconcileSecret),

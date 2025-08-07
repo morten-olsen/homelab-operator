@@ -1,0 +1,6 @@
+apiVersion: 'homelab.mortenolsen.pro/v1'
+kind: 'RedisServer'
+metadata:
+  name: redis
+  namespace: 'homelab'
+spec: {}

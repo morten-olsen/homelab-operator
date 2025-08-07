@@ -6,7 +6,7 @@ import type { Watcher } from '../watchers/watchers.watcher.ts';
 import { WatcherService } from '../watchers/watchers.ts';
 import type { Resource } from '../resources/resources.ts';
 
-const ISTIO_APP_SELECTOR = 'istio=ingress';
+const ISTIO_APP_SELECTOR = 'istio=gateway-controller';
 
 class IstioService {
   #gatewayResource: ResourceReference<V1Deployment>;

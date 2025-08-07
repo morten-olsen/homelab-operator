@@ -15,6 +15,6 @@ fi
 kubectl get namespace postgres > /dev/null 2>&1 || kubectl create namespace postgres
 
 # Create the secret
-kubectl create secret generic cloudflare-api-token-secret \
+kubectl create secret generic cloudflare-api-token \
   --namespace cert-manager \
   --from-literal=api-token="${CLOUDFLARE_API_KEY}"

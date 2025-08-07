@@ -89,20 +89,18 @@ abstract class CustomResource<TSpec extends ZodObject> extends EventEmitter<Cust
     return this.resource.kind;
   }
 
-  public get metadata() {
+  public get metadata(): KubernetesObject['metadata'] {
     const metadata = this.resource.metadata;
-    if (!metadata) {
-      throw new Error('Custom resources needs metadata');
-    }
-    return metadata;
+    return (
+      metadata || {
+        name: this.name,
+        namespace: this.namespace,
+      }
+    );
   }
 
   public get name() {
-    const name = this.metadata.name;
-    if (!name) {
-      throw new Error('Custom resources needs a name');
-    }
-    return name;
+    return this.resource.specifier.name;
   }
 
   public get namespace() {
@@ -130,7 +128,7 @@ abstract class CustomResource<TSpec extends ZodObject> extends EventEmitter<Cust
   }
 
   public get isSeen() {
-    return this.metadata.generation === this.status?.observedGeneration;
+    return this.metadata?.generation === this.status?.observedGeneration;
   }
 
   public get isValidSpec() {
@@ -146,7 +144,7 @@ abstract class CustomResource<TSpec extends ZodObject> extends EventEmitter<Cust
       return;
     }
     await this.patchStatus({
-      observedGeneration: this.metadata.generation,
+      observedGeneration: this.metadata?.generation,
     });
   };
 

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 const authentikServerSpecSchema = z.object({
   domain: z.string(),
+  subdomain: z.string(),
   database: z.string(),
   redis: z.string(),
 });

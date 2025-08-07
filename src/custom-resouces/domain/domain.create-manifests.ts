@@ -58,7 +58,7 @@ const createCertificateManifest = (options: CreateCertificateManifestOptions) =>
   kind: 'Certificate',
   metadata: {
     name: options.name,
-    namespace: 'istio-ingress',
+    namespace: 'homelab', // TODO: use namespace of gateway controller
   },
   spec: {
     secretName: options.secretName,

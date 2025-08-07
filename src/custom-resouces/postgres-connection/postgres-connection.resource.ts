@@ -1,4 +1,5 @@
 import type { V1Secret } from '@kubernetes/client-node';
+import type { z } from 'zod';
 
 import {
   CustomResource,
@@ -8,8 +9,12 @@ import { ResourceReference } from '../../services/resources/resources.ref.ts';
 import { ResourceService } from '../../services/resources/resources.ts';
 import { getWithNamespace } from '../../utils/naming.ts';
 import { PostgresService } from '../../services/postgres/postgres.service.ts';
+import { decodeSecret } from '../../utils/secrets.ts';
 
-import type { postgresConnectionSpecSchema } from './posgtres-connection.schemas.ts';
+import type {
+  postgresConnectionSecretDataSchema,
+  postgresConnectionSpecSchema,
+} from './posgtres-connection.schemas.ts';
 
 class PostgresConnectionResource extends CustomResource<typeof postgresConnectionSpecSchema> {
   #secret: ResourceReference<V1Secret>;
@@ -46,7 +51,9 @@ class PostgresConnectionResource extends CustomResource<typeof postgresConnectio
         reason: 'MissingSecret',
       });
     }
-    const { host, user, password, port } = current.data;
+    const { host, user, password, port } = decodeSecret<z.infer<typeof postgresConnectionSecretDataSchema>>(
+      current.data,
+    )!;
     if (!host) {
       return this.conditions.set('Ready', {
         status: 'False',

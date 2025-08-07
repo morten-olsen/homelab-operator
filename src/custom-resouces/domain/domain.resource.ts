@@ -47,7 +47,7 @@ class DomainResource extends CustomResource<typeof domainSpecSchema> {
       apiVersion: 'cert-manager.io/v1',
       kind: 'Certificate',
       name: `domain-${this.name}`,
-      namespace: 'istio-ingress',
+      namespace: 'homelab',
     });
 
     this.#gatewayResource.on('changed', this.queueReconcile);
@@ -85,7 +85,7 @@ class DomainResource extends CustomResource<typeof domainSpecSchema> {
       namespace: this.name,
       domain: this.spec.hostname,
       ref: this.ref,
-      gateway: istioService.gateway.current.metadata?.labels?.istio || 'ingress',
+      gateway: istioService.gateway.current.metadata?.labels?.istio || 'gateway-controller',
       secretName: this.#certSecret,
     });
     if (!deepEqual(this.#gatewayResource.current?.spec, manifest.spec)) {

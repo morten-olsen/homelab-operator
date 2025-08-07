@@ -1,7 +1,0 @@
-apiVersion: 'homelab.mortenolsen.pro/v1'
-kind: 'PostgresConnection'
-metadata:
-  name: 'db'
-  namespace: 'homelab'
-spec:
-  secret: postgres/postgres-secret

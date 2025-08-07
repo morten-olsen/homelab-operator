@@ -1,7 +1,6 @@
 apiVersion: 'homelab.mortenolsen.pro/v1'
-kind: 'RedisConnection'
+kind: 'PostgresCluster'
 metadata:
-  name: 'redis'
+  name: 'postgres'
   namespace: 'homelab'
-spec:
-  secret: redis/connection
+spec: {}

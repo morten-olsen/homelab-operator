@@ -7,6 +7,6 @@ spec:
   domain: homelab/homelab
   subdomain: test
   destination:
-    host: foo.svc.cluster.local
+    host: authentik.svc.cluster.local
     port:
       number: 80
