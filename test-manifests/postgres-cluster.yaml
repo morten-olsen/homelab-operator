@@ -1,6 +1,0 @@
-apiVersion: 'homelab.mortenolsen.pro/v1'
-kind: 'PostgresCluster'
-metadata:
-  name: 'postgres'
-  namespace: 'homelab'
-spec: {}

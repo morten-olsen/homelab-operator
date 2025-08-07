@@ -1,16 +1,22 @@
-import { ClientTypeEnum, MatchingModeEnum, SubModeEnum } from '@goauthentik/api';
+import { ClientTypeEnum, SubModeEnum } from '@goauthentik/api';
 import { z } from 'zod';
 
 const authentikClientSpecSchema = z.object({
-  server: z.string(),
+  secretRef: z.string(),
   subMode: z.enum(SubModeEnum).optional(),
   clientType: z.enum(ClientTypeEnum).optional(),
   redirectUris: z.array(
     z.object({
       url: z.string(),
-      matchingMode: z.enum(MatchingModeEnum).optional(),
+      matchingMode: z.enum(['strict', 'regex']),
     }),
   ),
+});
+
+const authentikClientServerSecretSchema = z.object({
+  internal_url: z.string(),
+  external_url: z.string(),
+  token: z.string(),
 });
 
 const authentikClientSecretSchema = z.object({
@@ -25,4 +31,4 @@ const authentikClientSecretSchema = z.object({
   jwks: z.string(),
 });
 
-export { authentikClientSpecSchema, authentikClientSecretSchema };
+export { authentikClientSpecSchema, authentikClientSecretSchema, authentikClientServerSecretSchema };

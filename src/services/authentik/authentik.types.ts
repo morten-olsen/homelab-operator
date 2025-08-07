@@ -10,7 +10,7 @@ type AuthentikServerInfo = {
 
 type UpsertClientRequest = {
   name: string;
-  secret: string;
+  secret?: string;
   scopes?: string[];
   flows?: {
     authorization: string;

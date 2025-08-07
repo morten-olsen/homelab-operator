@@ -1,9 +1,0 @@
-apiVersion: homelab.mortenolsen.pro/v1
-kind: Homelab
-metadata:
-  name: homelab
-  namespace: homelab
-spec:
-  storage:
-    enabled: true
-    path: /data/homelab

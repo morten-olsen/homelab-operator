@@ -1,7 +1,22 @@
 import { z } from 'zod';
 
 const postgresDatabaseSpecSchema = z.object({
-  connection: z.string(),
+  secretRef: z.string(),
 });
 
-export { postgresDatabaseSpecSchema };
+const postgresDatabaseSecretSchema = z.object({
+  host: z.string(),
+  port: z.string(),
+  user: z.string(),
+  password: z.string(),
+});
+
+const postgresDatabaseConnectionSecretSchema = z.object({
+  host: z.string(),
+  port: z.string(),
+  user: z.string(),
+  password: z.string(),
+  database: z.string(),
+});
+
+export { postgresDatabaseSpecSchema, postgresDatabaseSecretSchema, postgresDatabaseConnectionSecretSchema };
