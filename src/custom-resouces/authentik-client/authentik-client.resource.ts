@@ -1,36 +1,34 @@
 import type { V1Secret } from '@kubernetes/client-node';
 import type { z } from 'zod';
-import deepEqual from 'deep-equal';
 
 import {
   CustomResource,
-  type CustomResourceObject,
   type CustomResourceOptions,
   type SubresourceResult,
 } from '../../services/custom-resources/custom-resources.custom-resource.ts';
 import { ResourceReference } from '../../services/resources/resources.ref.ts';
 import { ResourceService, type Resource } from '../../services/resources/resources.ts';
 import { getWithNamespace } from '../../utils/naming.ts';
-import type { authentikServerSpecSchema } from '../authentik-server/authentik-server.scemas.ts';
-import type { domainSpecSchema } from '../domain/domain.schemas.ts';
 import { decodeSecret, encodeSecret } from '../../utils/secrets.ts';
-import { API_VERSION, CONTROLLED_LABEL } from '../../utils/consts.ts';
+import { CONTROLLED_LABEL } from '../../utils/consts.ts';
+import { isDeepSubset } from '../../utils/objects.ts';
+import { AuthentikService } from '../../services/authentik/authentik.service.ts';
 
-import { authentikClientSecretSchema, type authentikClientSpecSchema } from './authentik-client.schemas.ts';
+import {
+  authentikClientSecretSchema,
+  authentikClientServerSecretSchema,
+  type authentikClientSpecSchema,
+} from './authentik-client.schemas.ts';
 
 class AuthentikClientResource extends CustomResource<typeof authentikClientSpecSchema> {
-  #serverResource: ResourceReference<CustomResourceObject<typeof authentikServerSpecSchema>>;
-  #serverSecretResource: ResourceReference<V1Secret>;
-  #domainResource: ResourceReference<CustomResourceObject<typeof domainSpecSchema>>;
+  #serverSecret: ResourceReference<V1Secret>;
   #clientSecretResource: Resource<V1Secret>;
 
   constructor(options: CustomResourceOptions<typeof authentikClientSpecSchema>) {
     super(options);
     const resourceService = this.services.get(ResourceService);
 
-    this.#serverResource = new ResourceReference();
-    this.#serverSecretResource = new ResourceReference();
-    this.#domainResource = new ResourceReference();
+    this.#serverSecret = new ResourceReference();
     this.#clientSecretResource = resourceService.get({
       apiVersion: 'v1',
       kind: 'Secret',
@@ -40,93 +38,45 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
 
     this.#updateResouces();
 
-    this.#serverResource.on('changed', this.queueReconcile);
-    this.#serverSecretResource.on('changed', this.queueReconcile);
-    this.#domainResource.on('changed', this.queueReconcile);
+    this.#serverSecret.on('changed', this.queueReconcile);
     this.#clientSecretResource.on('changed', this.queueReconcile);
   }
 
-  get server() {
-    return this.#serverResource.current;
-  }
-
-  get serverSecret() {
-    return this.#serverSecretResource.current;
-  }
-
-  get serverSecretValue() {
-    return decodeSecret(this.#serverSecretResource.current?.data);
-  }
-
-  get domain() {
-    return this.#domainResource.current;
-  }
-
-  get clientSecret() {
-    return this.#clientSecretResource;
-  }
-
-  get clientSecretValue() {
-    const values = decodeSecret(this.#clientSecretResource.data);
-    const parsed = authentikClientSecretSchema.safeParse(values);
-    if (!parsed.success) {
-      return undefined;
-    }
-    return parsed.data;
-  }
-
   #updateResouces = () => {
-    const serverNames = getWithNamespace(this.spec.server, this.namespace);
+    const serverSecretNames = getWithNamespace(this.spec.secretRef, this.namespace);
     const resourceService = this.services.get(ResourceService);
-    this.#serverResource.current = resourceService.get({
-      apiVersion: API_VERSION,
-      kind: 'AuthentikServer',
-      name: serverNames.name,
-      namespace: serverNames.namespace,
-    });
-    this.#serverSecretResource.current = resourceService.get({
+    this.#serverSecret.current = resourceService.get({
       apiVersion: 'v1',
       kind: 'Secret',
-      name: `authentik-server-${serverNames.name}`,
-      namespace: serverNames.namespace,
+      name: serverSecretNames.name,
+      namespace: serverSecretNames.namespace,
     });
-    const server = this.#serverResource.current;
-    if (server && server.spec) {
-      const domainNames = getWithNamespace(server.spec.domain, server.namespace);
-      this.#domainResource.current = resourceService.get({
-        apiVersion: API_VERSION,
-        kind: 'Domain',
-        name: domainNames.name,
-        namespace: domainNames.namespace,
-      });
-    } else {
-      this.#domainResource.current = undefined;
-    }
   };
 
   #reconcileClientSecret = async (): Promise<SubresourceResult> => {
-    const domain = this.domain;
-    const server = this.server;
-    const serverSecret = this.serverSecret;
-    if (!server?.exists || !server?.spec || !serverSecret?.exists || !serverSecret.data) {
+    const serverSecret = this.#serverSecret.current;
+    if (!serverSecret?.exists || !serverSecret.data) {
       return {
         ready: false,
         failed: true,
         message: 'Server or server secret not found',
       };
     }
-    if (!domain?.exists || !domain?.spec) {
+    const serverSecretData = authentikClientServerSecretSchema.safeParse(decodeSecret(serverSecret.data));
+    if (!serverSecretData.success || !serverSecretData.data) {
       return {
         ready: false,
         failed: true,
-        message: 'Domain not found',
+        message: 'Server secret not found',
       };
     }
-    const url = `https://authentik.${domain.spec?.hostname}`;
+    const url = serverSecretData.data.external_url;
     const appName = this.name;
-    const values = this.clientSecretValue;
-    const expectedValues: Omit<z.infer<typeof authentikClientSecretSchema>, 'clientSecret'> = {
+    const clientSecretData = authentikClientSecretSchema.safeParse(decodeSecret(this.#clientSecretResource.data));
+
+    const expectedValues: z.infer<typeof authentikClientSecretSchema> = {
       clientId: this.name,
+      clientSecret: clientSecretData.data?.clientSecret || crypto.randomUUID(),
       configuration: new URL(`/application/o/${appName}/.well-known/openid-configuration`, url).toString(),
       configurationIssuer: new URL(`/application/o/${appName}/`, url).toString(),
       authorization: new URL(`/application/o/${appName}/authorize/`, url).toString(),
@@ -135,31 +85,8 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
       endSession: new URL(`/application/o/${appName}/end-session/`, url).toString(),
       jwks: new URL(`/application/o/${appName}/jwks/`, url).toString(),
     };
-    if (!values) {
-      await this.clientSecret.patch({
-        metadata: {
-          ownerReferences: [this.ref],
-          labels: {
-            ...CONTROLLED_LABEL,
-          },
-        },
-        data: encodeSecret({
-          ...expectedValues,
-          clientSecret: crypto.randomUUID(),
-        }),
-      });
-      return {
-        ready: false,
-        syncing: true,
-        message: 'UpdatingManifest',
-      };
-    }
-    const compareData = {
-      ...values,
-      clientSecret: undefined,
-    };
-    if (!deepEqual(compareData, expectedValues)) {
-      await this.clientSecret.patch({
+    if (!isDeepSubset(clientSecretData.data, expectedValues)) {
+      await this.#clientSecretResource.patch({
         metadata: {
           ownerReferences: [this.ref],
           labels: {
@@ -168,23 +95,82 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
         },
         data: encodeSecret(expectedValues),
       });
+      return {
+        ready: false,
+        syncing: true,
+        message: 'UpdatingManifest',
+      };
     }
     return {
       ready: true,
     };
   };
 
+  #reconcileServer = async (): Promise<SubresourceResult> => {
+    const serverSecret = this.#serverSecret.current;
+    const clientSecret = this.#clientSecretResource;
+
+    if (!serverSecret?.exists || !serverSecret.data) {
+      return {
+        ready: false,
+        failed: true,
+        message: 'Server secret not found',
+      };
+    }
+
+    const serverSecretData = authentikClientServerSecretSchema.safeParse(decodeSecret(serverSecret.data));
+    if (!serverSecretData.success || !serverSecretData.data) {
+      return {
+        ready: false,
+        failed: true,
+        message: 'Server secret not found',
+      };
+    }
+
+    const clientSecretData = authentikClientSecretSchema.safeParse(decodeSecret(clientSecret.data));
+    if (!clientSecretData.success || !clientSecretData.data) {
+      return {
+        ready: false,
+        failed: true,
+        message: 'Client secret not found',
+      };
+    }
+
+    const authentikService = this.services.get(AuthentikService);
+    const authentikServer = authentikService.get({
+      url: {
+        internal: serverSecretData.data.internal_url,
+        external: serverSecretData.data.external_url,
+      },
+      token: serverSecretData.data.token,
+    });
+
+    (await authentikServer).upsertClient({
+      ...this.spec,
+      name: this.name,
+      secret: clientSecretData.data.clientSecret,
+    });
+
+    return {
+      ready: true,
+    };
+  };
+
   public reconcile = async () => {
-    if (!this.exists || this.metadata.deletionTimestamp) {
+    if (!this.exists || this.metadata?.deletionTimestamp) {
       return;
     }
     this.#updateResouces();
-    await Promise.all([this.reconcileSubresource('Secret', this.#reconcileClientSecret)]);
+    await Promise.all([
+      this.reconcileSubresource('Secret', this.#reconcileClientSecret),
+      this.reconcileSubresource('Server', this.#reconcileServer),
+    ]);
 
     const secretReady = this.conditions.get('Secret')?.status === 'True';
+    const serverReady = this.conditions.get('Server')?.status === 'True';
 
     await this.conditions.set('Ready', {
-      status: secretReady ? 'True' : 'False',
+      status: secretReady && serverReady ? 'True' : 'False',
     });
   };
 }

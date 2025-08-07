@@ -4,7 +4,6 @@ import { ApiException } from '@kubernetes/client-node';
 import { Services } from './utils/service.ts';
 import { CustomResourceService } from './services/custom-resources/custom-resources.ts';
 import { WatcherService } from './services/watchers/watchers.ts';
-import { IstioService } from './services/istio/istio.ts';
 import { customResources } from './custom-resouces/custom-resources.ts';
 
 process.on('uncaughtException', (error) => {
@@ -72,14 +71,6 @@ await watcherService
     }),
   })
   .start();
-
-await watcherService.watchCustomGroup('networking.istio.io', 'v1', ['gateways', 'virtualservices', 'destinationrules']);
-await watcherService.watchCustomGroup('source.toolkit.fluxcd.io', 'v1', ['helmrepositories', 'helmcharts']);
-await watcherService.watchCustomGroup('helm.toolkit.fluxcd.io', 'v2', ['helmreleases']);
-await watcherService.watchCustomGroup('cert-manager.io', 'v1', ['issuers', 'certificates', 'clusterissuers']);
-
-const istio = services.get(IstioService);
-await istio.start();
 
 const customResourceService = services.get(CustomResourceService);
 customResourceService.register(...customResources);
