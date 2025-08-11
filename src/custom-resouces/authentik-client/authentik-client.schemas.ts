@@ -14,8 +14,8 @@ const authentikClientSpecSchema = z.object({
 });
 
 const authentikClientServerSecretSchema = z.object({
-  internal_url: z.string(),
-  external_url: z.string(),
+  name: z.string(),
+  url: z.string(),
   token: z.string(),
 });
 
