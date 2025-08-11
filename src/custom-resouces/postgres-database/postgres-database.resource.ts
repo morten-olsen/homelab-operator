@@ -168,8 +168,8 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
     }
     this.#updateSecret();
     await Promise.allSettled([
-      await this.reconcileSubresource(DATABASE_READY_CONDITION, this.#reconcileDatabase),
-      await this.reconcileSubresource(SECRET_READY_CONDITION, this.#reconcileSecret),
+      this.reconcileSubresource(DATABASE_READY_CONDITION, this.#reconcileDatabase),
+      this.reconcileSubresource(SECRET_READY_CONDITION, this.#reconcileSecret),
     ]);
 
     const secretReady = this.conditions.get(SECRET_READY_CONDITION)?.status === 'True';
