@@ -9,6 +9,7 @@ const postgresDatabaseSecretSchema = z.object({
   port: z.string(),
   user: z.string(),
   password: z.string(),
+  database: z.string().optional(),
 });
 
 const postgresDatabaseConnectionSecretSchema = z.object({

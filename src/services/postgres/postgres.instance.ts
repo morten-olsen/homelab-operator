@@ -10,6 +10,7 @@ type PostgresInstanceOptions = {
   port?: number;
   user: string;
   password: string;
+  database?: string;
 };
 
 class PostgresInstance {
@@ -23,6 +24,7 @@ class PostgresInstance {
         user: process.env.FORCE_PG_USER ?? options.user,
         password: process.env.FORCE_PG_PASSWORD ?? options.password,
         port: process.env.FORCE_PG_PORT ? parseInt(process.env.FORCE_PG_PORT) : options.port,
+        database: options.database,
       },
     });
   }
