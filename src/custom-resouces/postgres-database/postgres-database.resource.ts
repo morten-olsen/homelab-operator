@@ -95,6 +95,7 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
       port: serverSecretData.data.port,
       user: this.#userName,
       database: this.#dbName,
+      ...databaseSecretData.data,
     };
 
     if (!isDeepSubset(databaseSecretData.data, expectedSecret)) {
@@ -132,7 +133,7 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
       };
     }
 
-    const secretData = postgresDatabaseConnectionSecretSchema.safeParse(decodeSecret(this.#serverSecret.current?.data));
+    const secretData = postgresDatabaseConnectionSecretSchema.safeParse(decodeSecret(this.#databaseSecret.data));
     if (!secretData.success || !secretData.data) {
       return {
         ready: false,
