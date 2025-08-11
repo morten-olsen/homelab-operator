@@ -37,8 +37,8 @@ class GenerateSecretResource extends CustomResource<typeof generateSecretSpecSch
     const current = decodeSecret(this.#secretResource.data) || {};
 
     const expected = {
-      ...current,
       ...secrets,
+      ...current,
     };
 
     if (!isDeepSubset(current, expected)) {
