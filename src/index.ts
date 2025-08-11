@@ -5,6 +5,7 @@ import { Services } from './utils/service.ts';
 import { CustomResourceService } from './services/custom-resources/custom-resources.ts';
 import { WatcherService } from './services/watchers/watchers.ts';
 import { customResources } from './custom-resouces/custom-resources.ts';
+import { StorageProvider } from './storage-provider/storage-provider.ts';
 
 process.on('uncaughtException', (error) => {
   console.log('UNCAUGHT EXCEPTION');
@@ -29,6 +30,8 @@ process.on('unhandledRejection', (error) => {
 
 const services = new Services();
 const watcherService = services.get(WatcherService);
+const storageProvider = services.get(StorageProvider);
+await storageProvider.start();
 await watcherService
   .create({
     path: '/apis/apiextensions.k8s.io/v1/customresourcedefinitions',
