@@ -70,7 +70,7 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
         message: 'Server secret not found',
       };
     }
-    const url = serverSecretData.data.external_url;
+    const url = serverSecretData.data.url;
     const appName = this.name;
     const clientSecretData = authentikClientSecretSchema.safeParse(decodeSecret(this.#clientSecretResource.data));
 
@@ -139,8 +139,8 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
     const authentikService = this.services.get(AuthentikService);
     const authentikServer = authentikService.get({
       url: {
-        internal: serverSecretData.data.internal_url,
-        external: serverSecretData.data.external_url,
+        internal: `${serverSecretData.data.name}.${serverSecret.namespace}.svc.cluster.local`,
+        external: serverSecretData.data.url,
       },
       token: serverSecretData.data.token,
     });
