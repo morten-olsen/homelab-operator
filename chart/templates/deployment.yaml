@@ -33,6 +33,14 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data-volumes
+              mountPath: {{ .Values.storage.path }}
+      volumes:
+        - name: data-volumes
+          hostPath:
+            path: {{ .Values.storage.path }}
+            type: DirectoryOrCreate
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
