@@ -1,37 +1,78 @@
-import 'dotenv/config';
-import { ApiException } from '@kubernetes/client-node';
-
-import { Services } from './utils/service.ts';
+import { BootstrapService } from './bootstrap/bootstrap.ts';
+import { customResources } from './custom-resouces/custom-resources.ts';
 import { CustomResourceService } from './services/custom-resources/custom-resources.ts';
 import { WatcherService } from './services/watchers/watchers.ts';
-import { customResources } from './custom-resouces/custom-resources.ts';
 import { StorageProvider } from './storage-provider/storage-provider.ts';
-
-process.on('uncaughtException', (error) => {
-  console.log('UNCAUGHT EXCEPTION');
-  if (error instanceof ApiException) {
-    return console.error(error.body);
-  }
-  console.error(error);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (error) => {
-  console.log('UNHANDLED REJECTION');
-  if (error instanceof Error) {
-    console.error(error.stack);
-  }
-  if (error instanceof ApiException) {
-    return console.error(error.body);
-  }
-  console.error(error);
-  process.exit(1);
-});
+import { Services } from './utils/service.ts';
 
 const services = new Services();
+
 const watcherService = services.get(WatcherService);
-const storageProvider = services.get(StorageProvider);
-await storageProvider.start();
+await watcherService.watchCustomGroup('source.toolkit.fluxcd.io', 'v1', ['helmrepositories', 'gitrepositories']);
+await watcherService.watchCustomGroup('helm.toolkit.fluxcd.io', 'v2', ['helmreleases']);
+await watcherService.watchCustomGroup('cert-manager.io', 'v1', ['certificates']);
+await watcherService.watchCustomGroup('networking.k8s.io', 'v1', ['gateways', 'virtualservices']);
+
+await watcherService
+  .create({
+    path: '/api/v1/namespaces',
+    list: async (k8s) => {
+      return await k8s.api.listNamespace();
+    },
+    verbs: ['add', 'update', 'delete'],
+    transform: (manifest) => ({
+      apiVersion: 'v1',
+      kind: 'Namespace',
+      ...manifest,
+    }),
+  })
+  .start();
+
+await watcherService
+  .create({
+    path: '/api/v1/secrets',
+    list: async (k8s) => {
+      return await k8s.api.listSecretForAllNamespaces();
+    },
+    verbs: ['add', 'update', 'delete'],
+    transform: (manifest) => ({
+      apiVersion: 'v1',
+      kind: 'Secret',
+      ...manifest,
+    }),
+  })
+  .start();
+
+await watcherService
+  .create({
+    path: '/apis/apps/v1/statefulsets',
+    list: async (k8s) => {
+      return await k8s.apps.listStatefulSetForAllNamespaces({});
+    },
+    verbs: ['add', 'update', 'delete'],
+    transform: (manifest) => ({
+      apiVersion: 'apps/v1',
+      kind: 'StatefulSet',
+      ...manifest,
+    }),
+  })
+  .start();
+
+await watcherService
+  .create({
+    path: '/apis/apps/v1/deployments',
+    list: async (k8s) => {
+      return await k8s.apps.listDeploymentForAllNamespaces({});
+    },
+    verbs: ['add', 'update', 'delete'],
+    transform: (manifest) => ({
+      apiVersion: 'apps/v1',
+      kind: 'Deployment',
+      ...manifest,
+    }),
+  })
+  .start();
+
 await watcherService
   .create({
     path: '/apis/apiextensions.k8s.io/v1/customresourcedefinitions',
@@ -48,32 +89,24 @@ await watcherService
   .start();
 await watcherService
   .create({
-    path: '/api/v1/secrets',
+    path: '/apis/storage.k8s.io/v1/storageclasses',
     list: async (k8s) => {
-      return await k8s.api.listSecretForAllNamespaces();
+      return await k8s.storageApi.listStorageClass();
     },
     verbs: ['add', 'update', 'delete'],
     transform: (manifest) => ({
-      apiVersion: 'v1',
-      kind: 'Secret',
+      apiVersion: 'storage.k8s.io/v1',
+      kind: 'StorageClass',
       ...manifest,
     }),
   })
   .start();
-await watcherService
-  .create({
-    path: '/apis/apps/v1/deployments',
-    list: async (k8s) => {
-      return await k8s.apps.listDeploymentForAllNamespaces({});
-    },
-    verbs: ['add', 'update', 'delete'],
-    transform: (manifest) => ({
-      apiVersion: 'apps/v1',
-      kind: 'Deployment',
-      ...manifest,
-    }),
-  })
-  .start();
+
+const storageProvider = services.get(StorageProvider);
+await storageProvider.start();
+
+const bootstrap = services.get(BootstrapService);
+await bootstrap.ensure();
 
 const customResourceService = services.get(CustomResourceService);
 customResourceService.register(...customResources);

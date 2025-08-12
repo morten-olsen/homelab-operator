@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import type { V1Secret } from '@kubernetes/client-node';
 
 import {
@@ -12,42 +11,31 @@ import { Resource, ResourceService } from '../../services/resources/resources.ts
 import { getWithNamespace } from '../../utils/naming.ts';
 import { decodeSecret, encodeSecret } from '../../utils/secrets.ts';
 import { isDeepSubset } from '../../utils/objects.ts';
+import { postgresClusterSecretSchema } from '../postgres-cluster/postgres-cluster.schemas.ts';
 
-import {
-  postgresDatabaseConnectionSecretSchema,
-  postgresDatabaseSecretSchema,
-  type postgresDatabaseSpecSchema,
-} from './portgres-database.schemas.ts';
+import { type postgresDatabaseSpecSchema } from './portgres-database.schemas.ts';
 
 const SECRET_READY_CONDITION = 'Secret';
 const DATABASE_READY_CONDITION = 'Database';
 
-const secretDataSchema = z.object({
-  host: z.string(),
-  port: z.string().optional(),
-  database: z.string(),
-  user: z.string(),
-  password: z.string(),
-});
-
 class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpecSchema> {
-  #serverSecret: ResourceReference<V1Secret>;
+  #clusterSecret: ResourceReference<V1Secret>;
   #databaseSecret: Resource<V1Secret>;
 
   constructor(options: CustomResourceOptions<typeof postgresDatabaseSpecSchema>) {
     super(options);
-    this.#serverSecret = new ResourceReference();
+    this.#clusterSecret = new ResourceReference();
 
     const resourceService = this.services.get(ResourceService);
     this.#databaseSecret = resourceService.get({
       apiVersion: 'v1',
       kind: 'Secret',
-      name: `${this.name}-connection`,
+      name: `${this.name}-postgres-database`,
       namespace: this.namespace,
     });
 
     this.#updateSecret();
-    this.#serverSecret.on('changed', this.queueReconcile);
+    this.#clusterSecret.on('changed', this.queueReconcile);
   }
 
   get #dbName() {
@@ -60,17 +48,17 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
 
   #updateSecret = () => {
     const resourceService = this.services.get(ResourceService);
-    const secretNames = getWithNamespace(this.spec.secretRef, this.namespace);
-    this.#serverSecret.current = resourceService.get({
+    const secretNames = getWithNamespace(this.spec.cluster, this.namespace);
+    this.#clusterSecret.current = resourceService.get({
       apiVersion: 'v1',
       kind: 'Secret',
-      name: secretNames.name,
+      name: `${secretNames.name}-postgres-cluster`,
       namespace: secretNames.namespace,
     });
   };
 
   #reconcileSecret = async (): Promise<SubresourceResult> => {
-    const serverSecret = this.#serverSecret.current;
+    const serverSecret = this.#clusterSecret.current;
     const databaseSecret = this.#databaseSecret;
 
     if (!serverSecret?.exists || !serverSecret.data) {
@@ -80,7 +68,7 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
         reason: 'MissingConnectionSecret',
       };
     }
-    const serverSecretData = postgresDatabaseSecretSchema.safeParse(decodeSecret(serverSecret.data));
+    const serverSecretData = postgresClusterSecretSchema.safeParse(decodeSecret(serverSecret.data));
     if (!serverSecretData.success || !serverSecretData.data) {
       return {
         ready: false,
@@ -88,7 +76,7 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
         reason: 'SecretMissing',
       };
     }
-    const databaseSecretData = postgresDatabaseConnectionSecretSchema.safeParse(decodeSecret(databaseSecret.data));
+    const databaseSecretData = postgresClusterSecretSchema.safeParse(decodeSecret(databaseSecret.data));
     const expectedSecret = {
       password: crypto.randomUUID(),
       host: serverSecretData.data.host,
@@ -115,8 +103,8 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
   };
 
   #reconcileDatabase = async (): Promise<SubresourceResult> => {
-    const connectionSecret = this.#serverSecret.current;
-    if (!connectionSecret?.exists || !connectionSecret.data) {
+    const clusterSecret = this.#clusterSecret.current;
+    if (!clusterSecret?.exists || !clusterSecret.data) {
       return {
         ready: false,
         failed: true,
@@ -124,7 +112,7 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
       };
     }
 
-    const connectionSecretData = postgresDatabaseSecretSchema.safeParse(decodeSecret(connectionSecret.data));
+    const connectionSecretData = postgresClusterSecretSchema.safeParse(decodeSecret(clusterSecret.data));
     if (!connectionSecretData.success || !connectionSecretData.data) {
       return {
         ready: false,
@@ -133,7 +121,7 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
       };
     }
 
-    const secretData = postgresDatabaseConnectionSecretSchema.safeParse(decodeSecret(this.#databaseSecret.data));
+    const secretData = postgresClusterSecretSchema.safeParse(decodeSecret(this.#databaseSecret.data));
     if (!secretData.success || !secretData.data) {
       return {
         ready: false,
@@ -149,12 +137,12 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
       database: connectionSecretData.data.database,
     });
     await database.upsertRole({
-      name: secretData.data.user,
+      name: secretData.data.username,
       password: secretData.data.password,
     });
     await database.upsertDatabase({
       name: secretData.data.database,
-      owner: secretData.data.user,
+      owner: secretData.data.username,
     });
 
     return {
@@ -180,4 +168,4 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
   };
 }
 
-export { PostgresDatabaseResource, secretDataSchema as postgresDatabaseSecretSchema };
+export { PostgresDatabaseResource };

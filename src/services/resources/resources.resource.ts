@@ -163,6 +163,13 @@ class Resource<T extends KubernetesObject = UnknownResource> extends EventEmitte
     return undefined as ExpectedAny;
   }
 
+  public get status(): T extends { status?: infer K } ? K | undefined : never {
+    if (this.manifest && 'status' in this.manifest) {
+      return this.manifest.status as ExpectedAny;
+    }
+    return undefined as ExpectedAny;
+  }
+
   public get owners() {
     const { services } = this.#options;
     const references = this.metadata?.ownerReferences || [];

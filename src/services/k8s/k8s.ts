@@ -5,8 +5,8 @@ import {
   CustomObjectsApi,
   EventsV1Api,
   KubernetesObjectApi,
-  ApiException,
   AppsV1Api,
+  StorageV1Api,
 } from '@kubernetes/client-node';
 
 class K8sService {
@@ -17,6 +17,7 @@ class K8sService {
   #k8sEventsApi: EventsV1Api;
   #k8sObjectsApi: KubernetesObjectApi;
   #k8sAppsApi: AppsV1Api;
+  #k8sStorageApi: StorageV1Api;
 
   constructor() {
     this.#kc = new KubeConfig();
@@ -27,6 +28,7 @@ class K8sService {
     this.#k8sEventsApi = this.#kc.makeApiClient(EventsV1Api);
     this.#k8sObjectsApi = this.#kc.makeApiClient(KubernetesObjectApi);
     this.#k8sAppsApi = this.#kc.makeApiClient(AppsV1Api);
+    this.#k8sStorageApi = this.#kc.makeApiClient(StorageV1Api);
   }
 
   public get config() {
@@ -55,6 +57,10 @@ class K8sService {
 
   public get apps() {
     return this.#k8sAppsApi;
+  }
+
+  public get storageApi() {
+    return this.#k8sStorageApi;
   }
 }
 

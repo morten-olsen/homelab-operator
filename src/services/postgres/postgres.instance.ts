@@ -8,7 +8,7 @@ type PostgresInstanceOptions = {
   services: Services;
   host: string;
   port?: number;
-  user: string;
+  username: string;
   password: string;
   database?: string;
 };
@@ -21,7 +21,7 @@ class PostgresInstance {
       client: 'pg',
       connection: {
         host: process.env.FORCE_PG_HOST ?? options.host,
-        user: process.env.FORCE_PG_USER ?? options.user,
+        user: process.env.FORCE_PG_USER ?? options.username,
         password: process.env.FORCE_PG_PASSWORD ?? options.password,
         port: process.env.FORCE_PG_PORT ? parseInt(process.env.FORCE_PG_PORT) : options.port,
         database: options.database,

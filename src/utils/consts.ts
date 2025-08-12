@@ -7,10 +7,12 @@ const FIELDS = {
   },
 };
 
+const NAMESPACE = 'homelab';
+
 const CONTROLLED_LABEL = {
   [`${GROUP}/controlled`]: 'true',
 };
 
 const CONTROLLED_LABEL_SELECTOR = `${GROUP}/controlled=true`;
 
-export { GROUP, FIELDS, CONTROLLED_LABEL, CONTROLLED_LABEL_SELECTOR, API_VERSION };
+export { GROUP, FIELDS, CONTROLLED_LABEL, CONTROLLED_LABEL_SELECTOR, API_VERSION, NAMESPACE };

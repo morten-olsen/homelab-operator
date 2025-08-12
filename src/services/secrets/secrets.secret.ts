@@ -41,7 +41,7 @@ class EnsuredSecret<T extends ZodObject> {
     return this.#options.namespace;
   }
 
-  public get resouce() {
+  public get resource() {
     return this.#resource;
   }
 
@@ -62,7 +62,7 @@ class EnsuredSecret<T extends ZodObject> {
     if (deepEqual(patched, this.value)) {
       return;
     }
-    await this.resouce.patch({
+    await this.resource.patch({
       data: patched,
     });
   };

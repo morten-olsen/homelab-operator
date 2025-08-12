@@ -3,6 +3,7 @@ import type { KubernetesObject } from '@kubernetes/client-node';
 import type { Services } from '../../utils/service.ts';
 
 import { Resource } from './resources.resource.ts';
+import type { ResourceInstance } from './resources.instance.ts';
 
 type ResourceGetOptions = {
   apiVersion: string;
@@ -18,6 +19,14 @@ class ResourceService {
   constructor(services: Services) {
     this.#services = services;
   }
+
+  public getInstance = <T extends KubernetesObject, I extends ResourceInstance<T>>(
+    options: ResourceGetOptions,
+    instance: new (resource: Resource<T>) => I,
+  ) => {
+    const resource = this.get<T>(options);
+    return new instance(resource);
+  };
 
   public get = <T extends KubernetesObject>(options: ResourceGetOptions) => {
     const { apiVersion, kind, name, namespace } = options;
@@ -40,5 +49,6 @@ class ResourceService {
   };
 }
 
+export { ResourceInstance } from './resources.instance.ts';
 export { ResourceReference } from './resources.ref.ts';
 export { ResourceService, Resource };

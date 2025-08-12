@@ -13,12 +13,9 @@ import { decodeSecret, encodeSecret } from '../../utils/secrets.ts';
 import { CONTROLLED_LABEL } from '../../utils/consts.ts';
 import { isDeepSubset } from '../../utils/objects.ts';
 import { AuthentikService } from '../../services/authentik/authentik.service.ts';
+import { authentikServerSecretSchema } from '../authentik-server/authentik-server.schemas.ts';
 
-import {
-  authentikClientSecretSchema,
-  authentikClientServerSecretSchema,
-  type authentikClientSpecSchema,
-} from './authentik-client.schemas.ts';
+import { authentikClientSecretSchema, type authentikClientSpecSchema } from './authentik-client.schemas.ts';
 
 class AuthentikClientResource extends CustomResource<typeof authentikClientSpecSchema> {
   #serverSecret: ResourceReference<V1Secret>;
@@ -43,7 +40,7 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
   }
 
   #updateResouces = () => {
-    const serverSecretNames = getWithNamespace(this.spec.secretRef, this.namespace);
+    const serverSecretNames = getWithNamespace(`${this.spec.server}-server`, this.namespace);
     const resourceService = this.services.get(ResourceService);
     this.#serverSecret.current = resourceService.get({
       apiVersion: 'v1',
@@ -62,7 +59,7 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
         message: 'Server or server secret not found',
       };
     }
-    const serverSecretData = authentikClientServerSecretSchema.safeParse(decodeSecret(serverSecret.data));
+    const serverSecretData = authentikServerSecretSchema.safeParse(decodeSecret(serverSecret.data));
     if (!serverSecretData.success || !serverSecretData.data) {
       return {
         ready: false,
@@ -118,7 +115,7 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
       };
     }
 
-    const serverSecretData = authentikClientServerSecretSchema.safeParse(decodeSecret(serverSecret.data));
+    const serverSecretData = authentikServerSecretSchema.safeParse(decodeSecret(serverSecret.data));
     if (!serverSecretData.success || !serverSecretData.data) {
       return {
         ready: false,
@@ -139,7 +136,7 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
     const authentikService = this.services.get(AuthentikService);
     const authentikServer = authentikService.get({
       url: {
-        internal: `${serverSecretData.data.name}.${serverSecret.namespace}.svc.cluster.local`,
+        internal: `http://${serverSecretData.data.host}`,
         external: serverSecretData.data.url,
       },
       token: serverSecretData.data.token,
