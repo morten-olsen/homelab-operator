@@ -9,4 +9,6 @@ metadata:
   name: dev
   namespace: dev
 spec:
-  domain: dev.mortenolsen.pro
+  domain: one.dev.olsen.cloud
+  tls:
+    issuer: letsencrypt-prod

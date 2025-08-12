@@ -16,6 +16,8 @@ import { API_VERSION } from '../../utils/consts.ts';
 import { getWithNamespace } from '../../utils/naming.ts';
 import { decodeSecret, encodeSecret } from '../../utils/secrets.ts';
 import type { environmentSpecSchema } from '../environment/environment.schemas.ts';
+import { HttpServiceInstance } from '../../instances/http-service.ts';
+import type { redisServerSpecSchema } from '../redis-server/redis-server.schemas.ts';
 
 import { authentikServerInitSecretSchema, type authentikServerSpecSchema } from './authentik-server.schemas.ts';
 
@@ -25,6 +27,8 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
   #authentikSecret: SecretInstance;
   #authentikRelease: HelmReleaseInstance;
   #postgresSecret: ResourceReference<V1Secret>;
+  #httpService: HttpServiceInstance;
+  #redisServer: ResourceReference<CustomResourceObject<typeof redisServerSpecSchema>>;
 
   constructor(options: CustomResourceOptions<typeof authentikServerSpecSchema>) {
     super(options);
@@ -62,12 +66,24 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
       },
       HelmReleaseInstance,
     );
+    this.#httpService = resourceService.getInstance(
+      {
+        apiVersion: API_VERSION,
+        kind: 'HttpService',
+        name: this.name,
+        namespace: this.namespace,
+      },
+      HttpServiceInstance,
+    );
+    this.#redisServer = new ResourceReference();
     this.#postgresSecret = new ResourceReference();
     this.#authentikSecret.on('changed', this.queueReconcile);
     this.#authentikInitSecret.resource.on('deleted', this.queueReconcile);
     this.#environment.on('changed', this.queueReconcile);
     this.#authentikRelease.on('changed', this.queueReconcile);
     this.#postgresSecret.on('changed', this.queueReconcile);
+    this.#httpService.on('changed', this.queueReconcile);
+    this.#redisServer.on('changed', this.queueReconcile);
   }
 
   public reconcile = async () => {
@@ -126,6 +142,9 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
 
     const repoService = this.services.get(RepoService);
 
+    const redisNames = getWithNamespace(this.spec.redisServer, this.namespace);
+    const redisHost = `${redisNames.name}.${redisNames.namespace}.svc.cluster.local`;
+
     await this.#authentikRelease.ensure({
       metadata: {
         ownerReferences: [this.ref],
@@ -165,7 +184,7 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
               password: 'file:///postgres-creds/password',
             },
             redis: {
-              host: `redis.${this.namespace}.svc.cluster.local`,
+              host: redisHost,
             },
           },
           server: {
@@ -201,6 +220,22 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
                 readOnly: true,
               },
             ],
+          },
+        },
+      },
+    });
+
+    await this.#httpService.ensure({
+      metadata: {
+        ownerReferences: [this.ref],
+      },
+      spec: {
+        environment: this.spec.environment,
+        subdomain: this.spec.subdomain,
+        destination: {
+          host: `${this.name}-server.${this.namespace}.svc.cluster.local`,
+          port: {
+            number: 443,
           },
         },
       },

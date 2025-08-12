@@ -5,6 +5,7 @@ import { generateSecretDefinition } from './generate-secret/generate-secret.ts';
 import { httpServiceDefinition } from './http-service/http-service.ts';
 import { postgresClusterDefinition } from './postgres-cluster/postgres-cluster.ts';
 import { postgresDatabaseDefinition } from './postgres-database/postgres-database.ts';
+import { redisServerDefinition } from './redis-server/redis-server.ts';
 
 const customResources = [
   postgresDatabaseDefinition,
@@ -14,6 +15,7 @@ const customResources = [
   postgresClusterDefinition,
   authentikServerDefinition,
   httpServiceDefinition,
+  redisServerDefinition,
 ];
 
 export { customResources };

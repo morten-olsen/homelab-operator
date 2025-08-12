@@ -66,7 +66,7 @@ class HttpServiceController extends CustomResource<typeof httpServiceSpecSchema>
       },
       spec: {
         hosts: [`${this.spec.subdomain}.${environment.spec?.domain}`],
-        gateways: [`${this.#environment.current.namespace}/gateway`],
+        gateways: [`${this.#environment.current.namespace}/${this.#environment.current.name}`],
         http: [
           {
             route: [

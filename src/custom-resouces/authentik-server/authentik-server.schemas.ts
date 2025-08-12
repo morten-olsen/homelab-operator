@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const authentikServerSpecSchema = z.object({
+  redisServer: z.string(),
   postgresCluster: z.string(),
   environment: z.string(),
   subdomain: z.string(),

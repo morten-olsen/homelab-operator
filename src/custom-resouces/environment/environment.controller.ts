@@ -12,6 +12,8 @@ import { API_VERSION } from '../../utils/consts.ts';
 import { AuthentikServerInstance } from '../../instances/authentik-server.ts';
 import { StorageClassInstance } from '../../instances/storageclass.ts';
 import { PROVISIONER } from '../../storage-provider/storage-provider.ts';
+import { RedisServerInstance } from '../../instances/redis-server.ts';
+import { NamespaceService } from '../../bootstrap/namespaces/namespaces.ts';
 
 import type { environmentSpecSchema } from './environment.schemas.ts';
 
@@ -24,10 +26,12 @@ class EnvironmentController extends CustomResource<typeof environmentSpecSchema>
   #storageClass: StorageClassInstance;
   #postgresCluster: PostgresClusterInstance;
   #authentikServer: AuthentikServerInstance;
+  #redisServer: RedisServerInstance;
 
   constructor(options: CustomResourceOptions<typeof environmentSpecSchema>) {
     super(options);
     const resourceService = this.services.get(ResourceService);
+    const namespaceService = this.services.get(NamespaceService);
     this.#namespace = resourceService.getInstance(
       {
         apiVersion: 'v1',
@@ -48,8 +52,8 @@ class EnvironmentController extends CustomResource<typeof environmentSpecSchema>
       {
         apiVersion: 'cert-manager.io/v1',
         kind: 'Certificate',
-        name: this.name,
-        namespace: this.namespace,
+        name: `${this.name}-tls`,
+        namespace: namespaceService.homelab.name,
       },
       CertificateInstance,
     );
@@ -96,6 +100,15 @@ class EnvironmentController extends CustomResource<typeof environmentSpecSchema>
       },
       AuthentikServerInstance,
     );
+    this.#redisServer = resourceService.getInstance(
+      {
+        apiVersion: API_VERSION,
+        kind: 'RedisServer',
+        name: `${this.name}-redis-server`,
+        namespace: this.namespace,
+      },
+      RedisServerInstance,
+    );
     this.#gatewayCrd.on('changed', this.queueReconcile);
     this.#gateway.on('changed', this.queueReconcile);
     this.#certificateCrd.on('changed', this.queueReconcile);
@@ -104,6 +117,7 @@ class EnvironmentController extends CustomResource<typeof environmentSpecSchema>
     this.#postgresCluster.on('changed', this.queueReconcile);
     this.#authentikServer.on('changed', this.queueReconcile);
     this.#storageClass.on('changed', this.queueReconcile);
+    this.#redisServer.on('changed', this.queueReconcile);
   }
 
   public reconcile = async () => {
@@ -120,13 +134,10 @@ class EnvironmentController extends CustomResource<typeof environmentSpecSchema>
     });
     if (this.#certificateCrd.ready) {
       await this.#certificate.ensure({
-        metadata: {
-          ownerReferences: [this.ref],
-        },
         spec: {
           secretName: `${this.name}-tls`,
           issuerRef: {
-            name: 'cluster-issuer',
+            name: this.spec.tls.issuer,
             kind: 'ClusterIssuer',
           },
           dnsNames: [`*.${this.spec.domain}`],
@@ -143,7 +154,7 @@ class EnvironmentController extends CustomResource<typeof environmentSpecSchema>
         },
         spec: {
           selector: {
-            istio: 'gateway',
+            istio: 'homelab-istio-gateway',
           },
           servers: [
             {
@@ -197,7 +208,14 @@ class EnvironmentController extends CustomResource<typeof environmentSpecSchema>
           environment: `${this.namespace}/${this.name}`,
           subdomain: 'authentik',
           postgresCluster: `${this.name}-postgres-cluster`,
+          redisServer: `${this.name}-redis-server`,
         },
+      });
+      await this.#redisServer.ensure({
+        metadata: {
+          ownerReferences: [this.ref],
+        },
+        spec: {},
       });
     }
   };
