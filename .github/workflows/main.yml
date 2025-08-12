@@ -71,9 +71,21 @@ jobs:
     environment: release
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@v6
+      - id: create-release
+        uses: release-drafter/release-drafter@v6
         with:
           config-name: release-drafter-config.yml
           publish: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./operator.yaml
+          asset_name: operator.yaml
+          asset_content_type: application/yaml
