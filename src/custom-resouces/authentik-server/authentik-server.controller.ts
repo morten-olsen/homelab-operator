@@ -235,7 +235,7 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
         destination: {
           host: `${this.name}-server.${this.namespace}.svc.cluster.local`,
           port: {
-            number: 443,
+            number: 80,
           },
         },
       },
