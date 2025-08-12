@@ -75,5 +75,7 @@ jobs:
         with:
           config-name: release-drafter-config.yml
           publish: true
+          assets: |
+            operator.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
