@@ -18,8 +18,13 @@ import { decodeSecret, encodeSecret } from '../../utils/secrets.ts';
 import type { environmentSpecSchema } from '../environment/environment.schemas.ts';
 import { HttpServiceInstance } from '../../instances/http-service.ts';
 import type { redisServerSpecSchema } from '../redis-server/redis-server.schemas.ts';
+import { PostgresDatabaseInstance } from '../../instances/postgres-database.ts';
 
-import { authentikServerInitSecretSchema, type authentikServerSpecSchema } from './authentik-server.schemas.ts';
+import {
+  authentikServerInitSecretSchema,
+  authentikServerSecretSchema,
+  type authentikServerSpecSchema,
+} from './authentik-server.schemas.ts';
 
 class AuthentikServerController extends CustomResource<typeof authentikServerSpecSchema> {
   #environment: ResourceReference<CustomResourceObject<typeof environmentSpecSchema>>;
@@ -29,6 +34,7 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
   #postgresSecret: ResourceReference<V1Secret>;
   #httpService: HttpServiceInstance;
   #redisServer: ResourceReference<CustomResourceObject<typeof redisServerSpecSchema>>;
+  #postgresDatabase: PostgresDatabaseInstance;
 
   constructor(options: CustomResourceOptions<typeof authentikServerSpecSchema>) {
     super(options);
@@ -55,7 +61,7 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
         name: `${this.name}-server`,
         namespace: this.namespace,
       },
-      SecretInstance,
+      SecretInstance<typeof authentikServerSecretSchema>,
     );
     this.#authentikRelease = resourceService.getInstance(
       {
@@ -75,6 +81,15 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
       },
       HttpServiceInstance,
     );
+    this.#postgresDatabase = resourceService.getInstance(
+      {
+        apiVersion: API_VERSION,
+        kind: 'PostgresDatabase',
+        name: this.name,
+        namespace: this.namespace,
+      },
+      PostgresDatabaseInstance,
+    );
     this.#redisServer = new ResourceReference();
     this.#postgresSecret = new ResourceReference();
     this.#authentikSecret.on('changed', this.queueReconcile);
@@ -92,6 +107,7 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
     }
 
     if (!this.#authentikInitSecret.isValid) {
+      await this.markNotReady('MissingAuthentikInitSecret', 'The authentik init secret is not found');
       return;
     }
 
@@ -105,25 +121,33 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
       namespace: this.namespace,
     });
 
-    const postgresNames = getWithNamespace(this.spec.postgresCluster, this.namespace);
-    this.#postgresSecret.current = resourceService.get({
-      apiVersion: 'v1',
-      kind: 'Secret',
-      name: postgresNames.name,
-      namespace: postgresNames.namespace,
+    await this.#postgresDatabase.ensure({
+      metadata: {
+        ownerReferences: [this.ref],
+      },
+      spec: {
+        cluster: this.spec.postgresCluster,
+      },
     });
+    const postgresSecret = this.#postgresDatabase.secret;
 
-    if (!this.#postgresSecret.current?.exists) {
+    if (!postgresSecret.exists) {
+      await this.markNotReady('MissingPostgresSecret', 'The postgres secret is not found');
       return;
     }
-    const postgresSecret = decodeSecret(this.#postgresSecret.current.data) || {};
+    const postgresSecretData = decodeSecret(postgresSecret.data) || {};
 
     if (!this.#environment.current?.exists) {
+      await this.markNotReady(
+        'MissingEnvironment',
+        `Environment ${this.#environment.current?.namespace}/${this.#environment.current?.name} not found`,
+      );
       return;
     }
 
     const domain = this.#environment.current.spec?.domain;
     if (!domain) {
+      await this.markNotReady('MissingDomain', 'The domain is not set');
       return;
     }
 
@@ -178,9 +202,9 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
               enabled: false,
             },
             postgresql: {
-              host: postgresSecret.host,
-              name: postgresSecret.database,
-              user: postgresSecret.username,
+              host: postgresSecretData.host,
+              name: postgresSecretData.database,
+              user: postgresSecretData.username,
               password: 'file:///postgres-creds/password',
             },
             redis: {
@@ -192,7 +216,7 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
               {
                 name: 'postgres-creds',
                 secret: {
-                  secretName: this.#postgresSecret.current.name,
+                  secretName: postgresSecret.name,
                 },
               },
             ],
@@ -209,7 +233,7 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
               {
                 name: 'postgres-creds',
                 secret: {
-                  secretName: this.#postgresSecret.current.name,
+                  secretName: postgresSecret.name,
                 },
               },
             ],
@@ -240,6 +264,7 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
         },
       },
     });
+    await this.markReady();
   };
 }
 

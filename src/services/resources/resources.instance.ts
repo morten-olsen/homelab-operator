@@ -12,6 +12,10 @@ abstract class ResourceInstance<T extends KubernetesObject> extends ResourceRefe
     return this.current;
   }
 
+  public get services() {
+    return this.resource.services;
+  }
+
   public get exists() {
     return this.resource.exists;
   }

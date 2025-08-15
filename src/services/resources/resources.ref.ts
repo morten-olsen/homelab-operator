@@ -30,6 +30,10 @@ class ResourceReference<T extends KubernetesObject = KubernetesObject> extends E
     this.current = current;
   }
 
+  public get services() {
+    return this.#current?.services;
+  }
+
   public get current() {
     return this.#current;
   }

@@ -57,6 +57,10 @@ class Resource<T extends KubernetesObject = UnknownResource> extends EventEmitte
     this.#queue = new Queue({ concurrency: 1 });
   }
 
+  public get services() {
+    return this.#options.services;
+  }
+
   public get specifier() {
     return this.#options.data;
   }

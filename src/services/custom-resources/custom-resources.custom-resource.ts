@@ -179,6 +179,20 @@ abstract class CustomResource<TSpec extends ZodObject> extends EventEmitter<Cust
     }
   };
 
+  public markNotReady = async (reason?: string, message?: string) => {
+    await this.conditions.set('Ready', {
+      status: 'False',
+      reason,
+      message,
+    });
+  };
+
+  public markReady = async () => {
+    await this.conditions.set('Ready', {
+      status: 'True',
+    });
+  };
+
   public patchStatus = async (status: Partial<CustomResourceStatus>) => {
     const k8s = this.services.get(K8sService);
     const [group, version] = this.apiVersion?.split('/') || [];

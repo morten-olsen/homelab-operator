@@ -7,11 +7,11 @@ import {
 } from '../../services/custom-resources/custom-resources.custom-resource.ts';
 import { PostgresService } from '../../services/postgres/postgres.service.ts';
 import { ResourceReference } from '../../services/resources/resources.ref.ts';
-import { Resource, ResourceService } from '../../services/resources/resources.ts';
+import { ResourceService } from '../../services/resources/resources.ts';
 import { getWithNamespace } from '../../utils/naming.ts';
-import { decodeSecret, encodeSecret } from '../../utils/secrets.ts';
-import { isDeepSubset } from '../../utils/objects.ts';
+import { decodeSecret } from '../../utils/secrets.ts';
 import { postgresClusterSecretSchema } from '../postgres-cluster/postgres-cluster.schemas.ts';
+import { SecretInstance } from '../../instances/secret.ts';
 
 import { type postgresDatabaseSpecSchema } from './portgres-database.schemas.ts';
 
@@ -20,22 +20,27 @@ const DATABASE_READY_CONDITION = 'Database';
 
 class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpecSchema> {
   #clusterSecret: ResourceReference<V1Secret>;
-  #databaseSecret: Resource<V1Secret>;
+  #databaseSecret: SecretInstance<typeof postgresClusterSecretSchema>;
 
   constructor(options: CustomResourceOptions<typeof postgresDatabaseSpecSchema>) {
     super(options);
+    const resourceService = this.services.get(ResourceService);
+
     this.#clusterSecret = new ResourceReference();
 
-    const resourceService = this.services.get(ResourceService);
-    this.#databaseSecret = resourceService.get({
-      apiVersion: 'v1',
-      kind: 'Secret',
-      name: `${this.name}-postgres-database`,
-      namespace: this.namespace,
-    });
+    this.#databaseSecret = resourceService.getInstance(
+      {
+        apiVersion: 'v1',
+        kind: 'Secret',
+        name: `${this.name}-postgres-database`,
+        namespace: this.namespace,
+      },
+      SecretInstance<typeof postgresClusterSecretSchema>,
+    );
 
     this.#updateSecret();
     this.#clusterSecret.on('changed', this.queueReconcile);
+    this.#databaseSecret.on('changed', this.queueReconcile);
   }
 
   get #dbName() {
@@ -52,7 +57,7 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
     this.#clusterSecret.current = resourceService.get({
       apiVersion: 'v1',
       kind: 'Secret',
-      name: `${secretNames.name}-postgres-cluster`,
+      name: secretNames.name,
       namespace: secretNames.namespace,
     });
   };
@@ -81,21 +86,12 @@ class PostgresDatabaseResource extends CustomResource<typeof postgresDatabaseSpe
       password: crypto.randomUUID(),
       host: serverSecretData.data.host,
       port: serverSecretData.data.port,
-      user: this.#userName,
+      username: this.#userName,
       database: this.#dbName,
       ...databaseSecretData.data,
     };
 
-    if (!isDeepSubset(databaseSecretData.data, expectedSecret)) {
-      databaseSecret.patch({
-        data: encodeSecret(expectedSecret),
-      });
-      return {
-        ready: false,
-        syncing: true,
-        reason: 'SecretNotReady',
-      };
-    }
+    await databaseSecret.ensureData(expectedSecret);
 
     return {
       ready: true,
