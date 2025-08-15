@@ -153,7 +153,7 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
 
     const secretData = {
       url: `https://${this.spec.subdomain}.${domain}`,
-      host: `${this.name}.${this.namespace}.svc.cluster.local`,
+      host: `${this.name}-server.${this.namespace}.svc.cluster.local`,
       token: this.#authentikInitSecret.value?.AUTHENTIK_BOOTSTRAP_TOKEN ?? '',
     };
 
