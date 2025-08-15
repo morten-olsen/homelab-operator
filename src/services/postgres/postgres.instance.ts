@@ -42,9 +42,9 @@ class PostgresInstance {
     const existingRole = await this.#db.raw('SELECT 1 FROM pg_roles WHERE rolname = ?', [role.name]);
 
     if (existingRole.rows.length === 0) {
-      await this.#db.raw(`CREATE ROLE ${role.name} WITH LOGIN PASSWORD '${role.password}'`);
+      await this.#db.raw(`CREATE ROLE "${role.name}" WITH LOGIN PASSWORD '${role.password}'`);
     } else {
-      await this.#db.raw(`ALTER ROLE ${role.name} WITH PASSWORD '${role.password}'`);
+      await this.#db.raw(`ALTER ROLE "${role.name}" WITH PASSWORD '${role.password}'`);
     }
   };
 
@@ -52,9 +52,9 @@ class PostgresInstance {
     const existingDatabase = await this.#db.raw('SELECT * FROM pg_database WHERE datname = ?', [database.name]);
 
     if (existingDatabase.rows.length === 0) {
-      await this.#db.raw(`CREATE DATABASE ${database.name} OWNER ${database.owner}`);
+      await this.#db.raw(`CREATE DATABASE "${database.name}" OWNER "${database.owner}"`);
     } else {
-      await this.#db.raw(`ALTER DATABASE ${database.name} OWNER TO ${database.owner}`);
+      await this.#db.raw(`ALTER DATABASE "${database.name}" OWNER TO "${database.owner}"`);
     }
   };
 }
