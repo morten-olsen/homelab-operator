@@ -136,7 +136,7 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
     const authentikService = this.services.get(AuthentikService);
     const authentikServer = authentikService.get({
       url: {
-        internal: `http://${serverSecretData.data.host}`,
+        internal: `http://${serverSecretData.data.host}-server`,
         external: serverSecretData.data.url,
       },
       token: serverSecretData.data.token,
