@@ -1,7 +1,7 @@
 import { createCustomResourceDefinition } from '../../services/custom-resources/custom-resources.ts';
 import { GROUP } from '../../utils/consts.ts';
 
-import { AuthentikClientResource } from './authentik-client.resource.ts';
+import { AuthentikClientController } from './authentik-client.controller.ts';
 import { authentikClientSpecSchema } from './authentik-client.schemas.ts';
 
 const authentikClientDefinition = createCustomResourceDefinition({
@@ -12,7 +12,7 @@ const authentikClientDefinition = createCustomResourceDefinition({
     plural: 'authentikclients',
     singular: 'authentikclient',
   },
-  create: (options) => new AuthentikClientResource(options),
+  create: (options) => new AuthentikClientController(options),
   spec: authentikClientSpecSchema,
 });
 

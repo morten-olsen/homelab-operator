@@ -1,0 +1,9 @@
+apiVersion: homelab.mortenolsen.pro/v1
+kind: AuthentikClient
+metadata:
+  name: '{{ .Release.Name }}'
+spec:
+  server: '{{ .Values.authentikServer }}'
+  redirectUris:
+    - url: https://localhost:3000/api/v1/authentik/oauth2/callback
+      matchingMode: strict

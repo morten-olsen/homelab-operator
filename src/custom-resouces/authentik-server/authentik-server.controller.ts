@@ -93,10 +93,11 @@ class AuthentikServerController extends CustomResource<typeof authentikServerSpe
     this.#redisServer = new ResourceReference();
     this.#postgresSecret = new ResourceReference();
     this.#authentikSecret.on('changed', this.queueReconcile);
-    this.#authentikInitSecret.resource.on('deleted', this.queueReconcile);
+    this.#authentikInitSecret.resource.on('changed', this.queueReconcile);
     this.#environment.on('changed', this.queueReconcile);
     this.#authentikRelease.on('changed', this.queueReconcile);
     this.#postgresSecret.on('changed', this.queueReconcile);
+    this.#postgresDatabase.on('changed', this.queueReconcile);
     this.#httpService.on('changed', this.queueReconcile);
     this.#redisServer.on('changed', this.queueReconcile);
   }

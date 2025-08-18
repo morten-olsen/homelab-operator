@@ -17,7 +17,7 @@ import { authentikServerSecretSchema } from '../authentik-server/authentik-serve
 
 import { authentikClientSecretSchema, type authentikClientSpecSchema } from './authentik-client.schemas.ts';
 
-class AuthentikClientResource extends CustomResource<typeof authentikClientSpecSchema> {
+class AuthentikClientController extends CustomResource<typeof authentikClientSpecSchema> {
   #serverSecret: ResourceReference<V1Secret>;
   #clientSecretResource: Resource<V1Secret>;
 
@@ -172,4 +172,4 @@ class AuthentikClientResource extends CustomResource<typeof authentikClientSpecS
   };
 }
 
-export { AuthentikClientResource };
+export { AuthentikClientController };

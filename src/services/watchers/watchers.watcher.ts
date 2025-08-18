@@ -9,12 +9,11 @@ import { EventEmitter } from 'eventemitter3';
 
 import { K8sService } from '../k8s/k8s.ts';
 import type { Services } from '../../utils/service.ts';
-import { ResourceService, type Resource } from '../resources/resources.ts';
 
 type ResourceChangedAction = 'add' | 'update' | 'delete';
 
 type WatcherEvents<T extends KubernetesObject> = {
-  changed: (resource: Resource<T>) => void;
+  changed: (manifest: T) => void;
 };
 
 type WatcherOptions<T extends KubernetesObject = KubernetesObject> = {
@@ -53,27 +52,10 @@ class Watcher<T extends KubernetesObject> extends EventEmitter<WatcherEvents<T>>
   };
 
   #handleResource = (action: ResourceChangedAction, originalManifest: T) => {
-    const { services, transform } = this.#options;
+    const { transform } = this.#options;
     const manifest = transform ? transform(originalManifest) : originalManifest;
-    const resourceService = services.get(ResourceService);
-    const { apiVersion, kind, metadata = {} } = manifest;
-    const { name, namespace } = metadata;
-    if (!name || !apiVersion || !kind) {
-      return;
-    }
-    const resource = resourceService.get<T>({
-      apiVersion,
-      kind,
-      name,
-      namespace,
-    });
 
-    if (action === 'delete') {
-      resource.manifest = undefined;
-    } else {
-      resource.manifest = manifest;
-    }
-    this.emit('changed', resource);
+    this.emit('changed', manifest);
   };
 
   public stop = async () => {

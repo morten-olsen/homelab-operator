@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: '{{ .Release.Name }}'
+  labels:
+    app: '{{ .Release.Name }}'
+spec:
+  serviceName: '{{ .Release.Name }}-headless'
+  replicas: 1
+  selector:
+    matchLabels:
+      app: '{{ .Release.Name }}'
+  template:
+    metadata:
+      labels:
+        app: '{{ .Release.Name }}'
+    spec:
+      containers:
+        - name: '{{ .Release.Name }}'
+          image: ghcr.io/jordan-dalby/bytestash:latest
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: OIDC_ENABLED
+              value: 'true'
+            - name: OIDC_DISPLAY_NAME
+              value: Authentik
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-client-{{ .Release.Name }}
+                  key: clientId
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-client-{{ .Release.Name }}
+                  key: clientSecret
+            - name: OIDC_ISSUER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-client-{{ .Release.Name }}
+                  key: configuration
+
+            # !! IMPORTANT !!
+            # You MUST update this Redirect URI to match your external URL.
+            # This URI must also be configured in your Authentik provider settings for this client.
+            #- name: BS_OIDC_REDIRECT_URI
+            #value: 'https://bytestash.your-domain.com/login/oauth2/code/oidc'
+          volumeMounts:
+            - mountPath: /data/snippets
+              name: bytestash-data
+
+      # Defines security context for the pod to avoid running as root.
+      # securityContext:
+      #   runAsUser: 1000
+      #   runAsGroup: 1000
+      #   fsGroup: 1000
+
+  volumeClaimTemplates:
+    - metadata:
+        name: bytestash-data
+      spec:
+        accessModes: ['ReadWriteOnce']
+        storageClassName: '{{ .Values.storageClassName }}'
+        resources:
+          requests:
+            storage: 5Gi

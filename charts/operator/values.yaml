@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: ghcr.io/morten-olsen/homelab-operator
+  repository: homelab-operator # ghcr.io/morten-olsen/homelab-operator
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: main
