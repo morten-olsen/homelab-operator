@@ -7,8 +7,7 @@ apiVersion: homelab.mortenolsen.pro/v1
 kind: Environment
 metadata:
   name: dev
-  namespace: dev
 spec:
   domain: one.dev.olsen.cloud
   tls:
-    issuer: letsencrypt-prod
+    issuer: lets-encrypt-prod

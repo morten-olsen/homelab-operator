@@ -35,6 +35,12 @@
     "yaml": "^2.8.0",
     "zod": "^4.0.14"
   },
+  "imports": {
+    "#services/*": "./src/services/*",
+    "#resources/*": "./src/resources/*",
+    "#bootstrap/*": "./src/bootstrap/*",
+    "#utils/*": "./src/utils/*"
+  },
   "packageManager": "pnpm@10.6.0",
   "pnpm": {
     "onlyBuiltDependencies": [

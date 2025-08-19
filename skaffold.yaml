@@ -12,7 +12,7 @@ build:
     # load: true
   artifacts:
     # Defines the image to build. It matches the placeholder in deployment.yaml.
-    - image: homelab-operator
+    - image: homelaboperator
       context: . # The build context is the root directory
       docker:
         dockerfile: Dockerfile
@@ -22,6 +22,9 @@ manifests:
     releases:
       - name: homelab-operator
         chartPath: charts/operator
+        setValueTemplates:
+          image.repository: '{{.IMAGE_REPO_homelaboperator}}'
+          image.tag: '{{.IMAGE_TAG_homelaboperator}}'
 
 deploy:
   # Use kubectl to apply the manifests.
