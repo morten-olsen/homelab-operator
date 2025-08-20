@@ -12,6 +12,8 @@ import { Secret } from '#resources/core/secret/secret.ts';
 import { API_VERSION } from '#utils/consts.ts';
 import { getWithNamespace } from '#utils/naming.ts';
 import { PostgresService } from '#services/postgres/postgres.service.ts';
+import { NotReadyError } from '#utils/errors.ts';
+import { generateRandomHexPass } from '#utils/secrets.ts';
 
 const specSchema = z.object({
   environment: z.string().optional(),
@@ -77,17 +79,17 @@ class PostgresDatabase extends CustomResource<typeof specSchema> {
       this.#cluster.current = environment.postgresCluster;
     } else {
       this.#cluster.current = undefined;
-      return;
+      throw new NotReadyError('MissingEnvOrClusterSpec');
     }
 
     const clusterSecret = this.#cluster.current.secret.value;
     if (!clusterSecret) {
-      return;
+      throw new NotReadyError('MissingClusterSecret');
     }
 
     await this.#secret.set(
       (current) => ({
-        password: crypto.randomUUID(),
+        password: generateRandomHexPass(),
         user: this.username,
         database: this.database,
         ...current,
@@ -103,7 +105,7 @@ class PostgresDatabase extends CustomResource<typeof specSchema> {
 
     const secret = this.#secret.value;
     if (!secret) {
-      return;
+      throw new NotReadyError('MissingSecret');
     }
 
     const postgresService = this.services.get(PostgresService);
@@ -117,7 +119,7 @@ class PostgresDatabase extends CustomResource<typeof specSchema> {
     const connectionError = await database.ping();
     if (connectionError) {
       console.error('Failed to connect', connectionError);
-      return;
+      throw new NotReadyError('FailedToConnectToDatabase');
     }
     await database.upsertRole({
       name: secret.user,

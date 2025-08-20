@@ -15,11 +15,16 @@ class DestinationRule extends Resource<KubernetesObject & K8SDestinationRuleV1> 
     super(options);
     const resourceService = this.services.get(ResourceService);
     this.#crd = resourceService.get(CRD, 'destinationrules.networking.istio.io');
+    this.#crd.on('changed', this.#handleChange);
   }
 
   public get hasCRD() {
     return this.#crd.exists;
   }
+
+  #handleChange = () => {
+    this.emit('changed', this.manifest);
+  };
 
   public set = async (manifest: KubernetesObject & K8SDestinationRuleV1) => {
     if (!this.hasCRD) {

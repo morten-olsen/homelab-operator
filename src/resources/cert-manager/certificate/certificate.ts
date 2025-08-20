@@ -3,6 +3,7 @@ import type { K8SCertificateV1 } from 'src/__generated__/resources/K8SCertificat
 
 import { CRD } from '#resources/core/crd/crd.ts';
 import { Resource, ResourceService, type ResourceOptions } from '#services/resources/resources.ts';
+import { NotReadyError } from '#utils/errors.ts';
 
 class Certificate extends Resource<KubernetesObject & K8SCertificateV1> {
   public static readonly apiVersion = 'cert-manager.io/v1';
@@ -18,12 +19,19 @@ class Certificate extends Resource<KubernetesObject & K8SCertificateV1> {
   }
 
   #handleCrdChanged = () => {
-    this.emit('changed');
+    this.emit('changed', this.manifest);
   };
 
   public get hasCRD() {
     return this.#crd.exists;
   }
+
+  public set = async (manifest: KubernetesObject & K8SCertificateV1) => {
+    if (!this.hasCRD) {
+      throw new NotReadyError('MissingCRD', 'certificates.cert-manager.io does not exist');
+    }
+    return this.ensure(manifest);
+  };
 }
 
 export { Certificate };

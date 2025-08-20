@@ -3,7 +3,7 @@ import type { V1PersistentVolumeClaim } from '@kubernetes/client-node';
 import { StorageClass } from '../storage-class/storage-class.ts';
 import { PersistentVolume } from '../pv/pv.ts';
 
-import { Resource, ResourceService } from '#services/resources/resources.ts';
+import { Resource, ResourceService, type ResourceOptions } from '#services/resources/resources.ts';
 
 const PROVISIONER = 'homelab-operator';
 
@@ -11,8 +11,14 @@ class PVC extends Resource<V1PersistentVolumeClaim> {
   public static readonly apiVersion = 'v1';
   public static readonly kind = 'PersistentVolumeClaim';
 
+  constructor(options: ResourceOptions<V1PersistentVolumeClaim>) {
+    super(options);
+    this.on('changed', this.reconcile);
+  }
+
   public reconcile = async () => {
     const storageClassName = this.spec?.storageClassName;
+    console.log('PVC', this.name, storageClassName);
     if (!storageClassName) {
       return;
     }

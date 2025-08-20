@@ -16,6 +16,8 @@ import { Service } from '#resources/core/service/service.ts';
 import { HelmRelease } from '#resources/flux/helm-release/helm-release.ts';
 import { RepoService } from '#bootstrap/repos/repos.ts';
 import { VirtualService } from '#resources/istio/virtual-service/virtual-service.ts';
+import { DestinationRule } from '#resources/istio/destination-rule/destination-rule.ts';
+import { NotReadyError } from '#utils/errors.ts';
 
 const specSchema = z.object({
   environment: z.string(),
@@ -43,6 +45,7 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
   #service: Service;
   #helmRelease: HelmRelease;
   #virtualService: VirtualService;
+  #destinationRule: DestinationRule;
 
   constructor(options: CustomResourceOptions<typeof specSchema>) {
     super(options);
@@ -67,17 +70,20 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
 
     this.#virtualService = resourceService.get(VirtualService, this.name, this.namespace);
     this.#virtualService.on('changed', this.queueReconcile);
+
+    this.#destinationRule = resourceService.get(DestinationRule, this.name, this.namespace);
+    this.#destinationRule.on('changed', this.queueReconcile);
   }
 
   public reconcile = async () => {
     if (!this.spec) {
-      return;
+      throw new NotReadyError('MissingSpec');
     }
     const resourceService = this.services.get(ResourceService);
 
     this.#environment.current = resourceService.get(Environment, this.spec.environment);
     if (!this.#environment.current.spec) {
-      return;
+      throw new NotReadyError('MissingEnvSpev');
     }
 
     await this.#database.ensure({
@@ -91,7 +97,7 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
 
     const databaseSecret = this.#database.secret.value;
     if (!databaseSecret) {
-      return;
+      throw new NotReadyError('MissingDatabaseSecret');
     }
 
     await this.#initSecret.set(
@@ -111,7 +117,7 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
 
     const initSecret = this.#initSecret.value;
     if (!initSecret) {
-      return;
+      throw new NotReadyError('MissingInitSecret');
     }
 
     const domain = `${this.spec?.subdomain || 'authentik'}.${this.#environment.current.spec.domain}`;
@@ -129,7 +135,7 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
     );
     const secret = this.#secret.value;
     if (!secret) {
-      return;
+      throw new NotReadyError('MissingSecret');
     }
 
     const repoService = this.services.get(RepoService);
@@ -209,6 +215,20 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
                 readOnly: true,
               },
             ],
+          },
+        },
+      },
+    });
+
+    await this.#destinationRule.ensure({
+      metadata: {
+        ownerReferences: [this.ref],
+      },
+      spec: {
+        host: this.#service.hostname,
+        trafficPolicy: {
+          tls: {
+            mode: 'DISABLE',
           },
         },
       },

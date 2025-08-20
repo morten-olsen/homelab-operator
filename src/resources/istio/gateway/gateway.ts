@@ -15,11 +15,11 @@ class Gateway extends Resource<KubernetesObject & K8SGatewayV1> {
     super(options);
     const resourceService = this.services.get(ResourceService);
     this.#crd = resourceService.get(CRD, 'gateways.networking.istio.io');
-    this.on('changed', this.#handleUpdate);
+    this.#crd.on('changed', this.#handleUpdate);
   }
 
   #handleUpdate = async () => {
-    this.emit('changed');
+    this.emit('changed', this.manifest);
   };
 
   public get hasCRD() {

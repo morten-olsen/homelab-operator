@@ -20,11 +20,11 @@ type ResourceOptions<T extends KubernetesObject> = {
   manifest?: T;
 };
 
-type ResourceEvents = {
-  changed: () => void;
+type ResourceEvents<T extends KubernetesObject> = {
+  changed: (from?: T) => void;
 };
 
-class Resource<T extends KubernetesObject> extends EventEmitter<ResourceEvents> {
+class Resource<T extends KubernetesObject> extends EventEmitter<ResourceEvents<T>> {
   #manifest?: T;
   #queue: Queue;
   #options: ResourceOptions<T>;
@@ -34,6 +34,10 @@ class Resource<T extends KubernetesObject> extends EventEmitter<ResourceEvents> 
     this.#options = options;
     this.#manifest = options.manifest;
     this.#queue = new Queue({ concurrency: 1 });
+  }
+
+  protected get queue() {
+    return this.#queue;
   }
 
   public get services() {
@@ -48,8 +52,19 @@ class Resource<T extends KubernetesObject> extends EventEmitter<ResourceEvents> 
     if (deepEqual(this.manifest, value)) {
       return;
     }
+    const previous = this.#manifest;
     this.#manifest = value;
-    this.emit('changed');
+    this.emit('changed', previous);
+  }
+
+  public get plural() {
+    if ('plural' in this.constructor && typeof this.constructor.plural === 'string') {
+      return this.constructor.plural;
+    }
+    if ('kind' in this.constructor && typeof this.constructor.kind === 'string') {
+      return this.constructor.kind.toLowerCase() + 's';
+    }
+    throw new Error('Unknown kind');
   }
 
   public get exists() {
@@ -123,11 +138,7 @@ class Resource<T extends KubernetesObject> extends EventEmitter<ResourceEvents> 
   public patch = (patch: T) =>
     this.#queue.add(async () => {
       const { services } = this.#options;
-      services.log.debug(`Patching ${this.apiVersion}/${this.kind}/${this.namespace}/${this.name}`, {
-        spelector: this.selector,
-        current: this.manifest,
-        patch,
-      });
+      services.log.debug(`Patching ${this.apiVersion}/${this.kind}/${this.namespace}/${this.name}`);
       const k8s = services.get(K8sService);
       const body = {
         ...patch,

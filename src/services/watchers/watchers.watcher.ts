@@ -47,9 +47,7 @@ class Watcher<T extends KubernetesObject> extends EventEmitter<WatcherEvents<T>>
     informer.on('update', this.#handleResource.bind(this, 'update'));
     informer.on('delete', this.#handleResource.bind(this, 'delete'));
     informer.on('error', (err) => {
-      if (!(err instanceof ApiException && err.code === 404)) {
-        console.log('Watcher failed, will retry in 3 seconds', path, err);
-      }
+      console.log('Watcher failed, will retry in 3 seconds', path, err);
       setTimeout(this.start, 3000);
     });
     return informer;

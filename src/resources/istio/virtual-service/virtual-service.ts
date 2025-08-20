@@ -15,11 +15,16 @@ class VirtualService extends Resource<KubernetesObject & K8SVirtualServiceV1> {
     super(options);
     const resourceService = this.services.get(ResourceService);
     this.#crd = resourceService.get(CRD, 'virtualservices.networking.istio.io');
+    this.#crd.on('changed', this.#handleChange);
   }
 
   public get hasCRD() {
     return this.#crd.exists;
   }
+
+  #handleChange = () => {
+    this.emit('changed', this.manifest);
+  };
 
   public set = async (manifest: KubernetesObject & K8SVirtualServiceV1) => {
     if (!this.hasCRD) {

@@ -11,6 +11,7 @@ import { Certificate } from '#resources/cert-manager/certificate/certificate.ts'
 import { StorageClass } from '#resources/core/storage-class/storage-class.ts';
 import { PROVISIONER } from '#resources/core/pvc/pvc.ts';
 import { Gateway } from '#resources/istio/gateway/gateway.ts';
+import { NotReadyError } from '#utils/errors.ts';
 
 const specSchema = z.object({
   domain: z.string(),
@@ -86,7 +87,7 @@ class Environment extends CustomResource<typeof specSchema> {
   public reconcile = async () => {
     const { data: spec, success } = specSchema.safeParse(this.spec);
     if (!success || !spec) {
-      return;
+      throw new NotReadyError('InvalidSpec');
     }
     await this.#namespace.ensure({
       metadata: {
@@ -95,24 +96,22 @@ class Environment extends CustomResource<typeof specSchema> {
         },
       },
     });
-    if (this.#certificate.hasCRD) {
-      await this.#certificate.ensure({
-        metadata: {
-          ownerReferences: [this.ref],
+    await this.#certificate.ensure({
+      metadata: {
+        ownerReferences: [this.ref],
+      },
+      spec: {
+        secretName: `${this.name}-tls`,
+        issuerRef: {
+          name: spec.tls.issuer,
+          kind: 'ClusterIssuer',
         },
-        spec: {
-          secretName: `${this.name}-tls`,
-          issuerRef: {
-            name: spec.tls.issuer,
-            kind: 'ClusterIssuer',
-          },
-          dnsNames: [`*.${spec.domain}`],
-          privateKey: {
-            rotationPolicy: 'Always',
-          },
+        dnsNames: [`*.${spec.domain}`],
+        privateKey: {
+          rotationPolicy: 'Always',
         },
-      });
-    }
+      },
+    });
     await this.#storageClass.ensure({
       metadata: {
         ownerReferences: [this.ref],
