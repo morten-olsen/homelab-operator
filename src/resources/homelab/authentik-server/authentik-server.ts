@@ -215,7 +215,7 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
     });
 
     const gateway = this.#environment.current.gateway;
-    await this.#virtualService.ensure({
+    await this.#virtualService.set({
       metadata: {
         ownerReferences: [this.ref],
       },

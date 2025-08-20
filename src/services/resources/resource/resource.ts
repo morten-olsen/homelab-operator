@@ -7,8 +7,6 @@ import { Queue } from '../../queue/queue.ts';
 import { K8sService } from '../../k8s/k8s.ts';
 import { isDeepSubset } from '../../../utils/objects.ts';
 
-import { CoalescingQueued } from '#utils/queues.ts';
-
 type ResourceSelector = {
   apiVersion: string;
   kind: string;
@@ -29,7 +27,6 @@ type ResourceEvents = {
 class Resource<T extends KubernetesObject> extends EventEmitter<ResourceEvents> {
   #manifest?: T;
   #queue: Queue;
-  #reconcileQueue: CoalescingQueued<void>;
   #options: ResourceOptions<T>;
 
   constructor(options: ResourceOptions<T>) {
@@ -37,26 +34,7 @@ class Resource<T extends KubernetesObject> extends EventEmitter<ResourceEvents> 
     this.#options = options;
     this.#manifest = options.manifest;
     this.#queue = new Queue({ concurrency: 1 });
-    this.#reconcileQueue = new CoalescingQueued({
-      action: async () => {
-        try {
-          if (!this.exists || !this.reconcile) {
-            return;
-          }
-          console.log('Reconcileing', this.apiVersion, this.kind, this.namespace, this.name);
-          await this.reconcile?.();
-        } catch (err) {
-          console.error(err);
-        }
-      },
-    });
-    this.on('changed', this.queueReconcile);
   }
-
-  public reconcile?: () => Promise<void>;
-  public queueReconcile = () => {
-    return this.#reconcileQueue.run();
-  };
 
   public get services() {
     return this.#options.services;

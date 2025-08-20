@@ -146,7 +146,7 @@ class Environment extends CustomResource<typeof specSchema> {
       },
     });
 
-    await this.#gateway.ensure({
+    await this.#gateway.set({
       metadata: {
         ownerReferences: [this.ref],
       },
