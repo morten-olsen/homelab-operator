@@ -12,6 +12,7 @@ import { StorageClass } from '#resources/core/storage-class/storage-class.ts';
 import { PROVISIONER } from '#resources/core/pvc/pvc.ts';
 import { Gateway } from '#resources/istio/gateway/gateway.ts';
 import { NotReadyError } from '#utils/errors.ts';
+import { NamespaceService } from '#bootstrap/namespaces/namespaces.ts';
 
 const specSchema = z.object({
   domain: z.string(),
@@ -37,11 +38,12 @@ class Environment extends CustomResource<typeof specSchema> {
   constructor(options: CustomResourceOptions<typeof specSchema>) {
     super(options);
     const resourceService = this.services.get(ResourceService);
+    const namespaceService = this.services.get(NamespaceService);
 
     this.#namespace = resourceService.get(Namespace, this.name);
     this.#namespace.on('changed', this.queueReconcile);
 
-    this.#certificate = resourceService.get(Certificate, this.name, this.name);
+    this.#certificate = resourceService.get(Certificate, this.name, namespaceService.homelab.name);
     this.#certificate.on('changed', this.queueReconcile);
 
     this.#storageClass = resourceService.get(StorageClass, this.name);
@@ -97,9 +99,6 @@ class Environment extends CustomResource<typeof specSchema> {
       },
     });
     await this.#certificate.ensure({
-      metadata: {
-        ownerReferences: [this.ref],
-      },
       spec: {
         secretName: `${this.name}-tls`,
         issuerRef: {

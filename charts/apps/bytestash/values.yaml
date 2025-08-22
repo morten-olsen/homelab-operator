@@ -1,5 +1,2 @@
-environment: dev/dev
-postgresCluster: dev/dev-postgres-cluster
-authentikServer: dev/dev-authentik-server
-storageClassName: dev-retain
+environment: dev
 subdomain: bytestash

@@ -75,6 +75,26 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
     this.#destinationRule.on('changed', this.queueReconcile);
   }
 
+  public get service() {
+    return this.#service;
+  }
+
+  public get secret() {
+    return this.#secret;
+  }
+
+  public get subdomain() {
+    return this.spec?.subdomain || 'authentik';
+  }
+
+  public get domain() {
+    return `${this.subdomain}.${this.#environment.current?.spec?.domain}`;
+  }
+
+  public get url() {
+    return `https://${this.domain}`;
+  }
+
   public reconcile = async () => {
     if (!this.spec) {
       throw new NotReadyError('MissingSpec');
@@ -240,7 +260,7 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
         ownerReferences: [this.ref],
       },
       spec: {
-        gateways: [`${gateway.namespace}/${gateway.name}`],
+        gateways: [`${gateway.namespace}/${gateway.name}`, 'mesh'],
         hosts: [domain],
         http: [
           {

@@ -8,6 +8,7 @@ import { Resource, type ResourceOptions } from './resource/resource.ts';
 import { createManifest } from './resources.utils.ts';
 
 import { K8sService } from '#services/k8s/k8s.ts';
+import { EventEmitter } from 'eventemitter3';
 
 type ResourceClass<T extends KubernetesObject> = (new (options: ResourceOptions<T>) => Resource<T>) & {
   apiVersion: string;
@@ -21,7 +22,11 @@ type InstallableResourceClass<T extends KubernetesObject> = ResourceClass<T> & {
   scope: 'Namespaced' | 'Cluster';
 };
 
-class ResourceService {
+type ResourceServiceEvents = {
+  changed: (resource: Resource<ExpectedAny>) => void;
+};
+
+class ResourceService extends EventEmitter<ResourceServiceEvents> {
   #services: Services;
   #registry: Map<
     ResourceClass<ExpectedAny>,
@@ -34,6 +39,7 @@ class ResourceService {
   >;
 
   constructor(services: Services) {
+    super();
     this.#services = services;
     this.#registry = new Map();
   }
@@ -65,6 +71,10 @@ class ResourceService {
     }
   };
 
+  public getAllOfKind = <T extends ResourceClass<ExpectedAny>>(type: T) => {
+    return (this.#registry.get(type)?.resources?.filter((r) => r.exists) as InstanceType<T>[]) || [];
+  };
+
   public get = <T extends ResourceClass<ExpectedAny>>(type: T, name: string, namespace?: string) => {
     let resourceRegistry = this.#registry.get(type);
     if (!resourceRegistry) {
@@ -88,6 +98,7 @@ class ResourceService {
         },
         services: this.#services,
       });
+      current.on('changed', this.emit.bind(this, 'changed', current));
       resources.push(current);
     }
     return current as InstanceType<T>;
