@@ -13,9 +13,11 @@ import { PROVISIONER } from '#resources/core/pvc/pvc.ts';
 import { Gateway } from '#resources/istio/gateway/gateway.ts';
 import { NotReadyError } from '#utils/errors.ts';
 import { NamespaceService } from '#bootstrap/namespaces/namespaces.ts';
+import { CloudflareService } from '#services/cloudflare/cloudflare.ts';
 
 const specSchema = z.object({
   domain: z.string(),
+  networkIp: z.string().optional(),
   tls: z.object({
     issuer: z.string(),
   }),
@@ -34,31 +36,36 @@ class Environment extends CustomResource<typeof specSchema> {
   #postgresCluster: PostgresCluster;
   #redisServer: RedisServer;
   #authentikServer: AuthentikServer;
+  #cloudflareService: CloudflareService;
 
   constructor(options: CustomResourceOptions<typeof specSchema>) {
     super(options);
     const resourceService = this.services.get(ResourceService);
     const namespaceService = this.services.get(NamespaceService);
+    const homelabNamespace = namespaceService.homelab.name;
+
+    this.#cloudflareService = this.services.get(CloudflareService);
+    this.#cloudflareService.on('changed', this.queueReconcile);
 
     this.#namespace = resourceService.get(Namespace, this.name);
     this.#namespace.on('changed', this.queueReconcile);
 
-    this.#certificate = resourceService.get(Certificate, this.name, namespaceService.homelab.name);
+    this.#certificate = resourceService.get(Certificate, this.name, homelabNamespace);
     this.#certificate.on('changed', this.queueReconcile);
 
     this.#storageClass = resourceService.get(StorageClass, this.name);
     this.#storageClass.on('changed', this.queueReconcile);
 
-    this.#postgresCluster = resourceService.get(PostgresCluster, `${this.name}-postgres-cluster`, this.name);
+    this.#postgresCluster = resourceService.get(PostgresCluster, `${this.name}-postgres-cluster`, homelabNamespace);
     this.#postgresCluster.on('changed', this.queueReconcile);
 
-    this.#redisServer = resourceService.get(RedisServer, `${this.name}-redis-server`, this.name);
+    this.#redisServer = resourceService.get(RedisServer, `${this.name}-redis-server`, homelabNamespace);
     this.#redisServer.on('changed', this.queueReconcile);
 
-    this.#gateway = resourceService.get(Gateway, this.name, this.name);
+    this.#gateway = resourceService.get(Gateway, this.name, homelabNamespace);
     this.#gateway.on('changed', this.queueReconcile);
 
-    this.#authentikServer = resourceService.get(AuthentikServer, `${this.name}-authentik`, this.name);
+    this.#authentikServer = resourceService.get(AuthentikServer, `${this.name}-authentik`, homelabNamespace);
     this.#authentikServer.on('changed', this.queueReconcile);
   }
 
@@ -90,6 +97,28 @@ class Environment extends CustomResource<typeof specSchema> {
     const { data: spec, success } = specSchema.safeParse(this.spec);
     if (!success || !spec) {
       throw new NotReadyError('InvalidSpec');
+    }
+
+    if (this.#cloudflareService.ready && spec.networkIp) {
+      const client = this.#cloudflareService.client;
+      const zones = await client.zones.list({
+        name: spec.domain,
+      });
+      const [zone] = zones.result;
+      if (!zone) {
+        throw new NotReadyError('NoZoneFound');
+      }
+
+      const existingRecords = await client.dns.records.list({
+        zone_id: zone.id,
+        name: {
+          exact: `*.${spec.domain}`,
+        },
+      });
+
+      console.log('Cloudflare records', existingRecords);
+
+      // zones.result[0].
     }
     await this.#namespace.ensure({
       metadata: {

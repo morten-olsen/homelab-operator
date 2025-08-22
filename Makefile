@@ -4,7 +4,7 @@ dev-destroy:
 	colima delete -f
 
 dev-recreate: dev-destroy
-	colima start --network-address --kubernetes -m 8 --k3s-arg="--disable=helm-controller,local-storage,traefik" # --mount ${PWD}/data:/data:w 
+	colima start --network-address --kubernetes -m 8 --k3s-arg="--disable helm-controller,local-storage,traefik --docker" # --mount ${PWD}/data:/data:w 
 	flux install --components="source-controller,helm-controller"
 
 setup-flux:

@@ -1,7 +1,7 @@
 apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
-  name: my-utility-service
+  name: homelab-operator
 
 build:
   # This tells Skaffold to build the image locally using your Docker daemon.
