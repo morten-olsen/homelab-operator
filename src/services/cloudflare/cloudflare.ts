@@ -52,6 +52,55 @@ class CloudflareService extends EventEmitter<CloudflareServiceEvents> {
 
     return client;
   }
+
+  public ensureTunnel = async (route: string) => {
+    const secret = this.#secret.value;
+    if (!secret) {
+      return;
+    }
+    const client = this.client;
+    const domainParts = route.split('.');
+    const cname = `${secret.tunnelId}.cfargotunnel.com`;
+    const tld = domainParts.pop();
+    const root = domainParts.pop();
+    const zoneName = `${root}.${tld}`;
+    const name = domainParts.join('.');
+
+    const zones = await client.zones.list({
+      name: zoneName,
+    });
+    const [zone] = zones.result;
+    if (!zone) {
+      return;
+    }
+    const records = await client.dns.records.list({
+      zone_id: zone.id,
+      name: {
+        exact: route,
+      },
+      type: 'CNAME',
+    });
+    const [record] = records.result;
+    if (record) {
+      await client.dns.records.edit(record.id, {
+        zone_id: zone.id,
+        type: 'CNAME',
+        content: cname,
+        name: name,
+        ttl: 1,
+        proxied: true,
+      });
+    } else {
+      await client.dns.records.create({
+        zone_id: zone.id,
+        type: 'CNAME',
+        content: cname,
+        name: name,
+        ttl: 1,
+        proxied: true,
+      });
+    }
+  };
 }
 
 export { CloudflareService };

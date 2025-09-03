@@ -15,9 +15,9 @@ import { generateRandomHexPass } from '#utils/secrets.ts';
 import { Service } from '#resources/core/service/service.ts';
 import { HelmRelease } from '#resources/flux/helm-release/helm-release.ts';
 import { RepoService } from '#bootstrap/repos/repos.ts';
-import { VirtualService } from '#resources/istio/virtual-service/virtual-service.ts';
 import { DestinationRule } from '#resources/istio/destination-rule/destination-rule.ts';
 import { NotReadyError } from '#utils/errors.ts';
+import { ExternalHttpService } from '../external-http-service.ts/external-http-service.ts';
 
 const specSchema = z.object({
   environment: z.string(),
@@ -44,7 +44,7 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
   #initSecret: Secret<InitSecretData>;
   #service: Service;
   #helmRelease: HelmRelease;
-  #virtualService: VirtualService;
+  #externalHttpService: ExternalHttpService;
   #destinationRule: DestinationRule;
 
   constructor(options: CustomResourceOptions<typeof specSchema>) {
@@ -68,11 +68,10 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
     this.#helmRelease = resourceService.get(HelmRelease, this.name, this.namespace);
     this.#helmRelease.on('changed', this.queueReconcile);
 
-    this.#virtualService = resourceService.get(VirtualService, this.name, this.namespace);
-    this.#virtualService.on('changed', this.queueReconcile);
-
     this.#destinationRule = resourceService.get(DestinationRule, this.name, this.namespace);
     this.#destinationRule.on('changed', this.queueReconcile);
+
+    this.#externalHttpService = resourceService.get(ExternalHttpService, this.name, this.namespace);
   }
 
   public get service() {
@@ -254,28 +253,19 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
       },
     });
 
-    const gateway = this.#environment.current.gateway;
-    await this.#virtualService.set({
+    await this.#externalHttpService.ensure({
       metadata: {
         ownerReferences: [this.ref],
       },
       spec: {
-        gateways: [`${gateway.namespace}/${gateway.name}`, 'mesh'],
-        hosts: [domain],
-        http: [
-          {
-            route: [
-              {
-                destination: {
-                  host: this.#service.hostname,
-                  port: {
-                    number: 80,
-                  },
-                },
-              },
-            ],
+        environment: this.spec.environment,
+        subdomain: this.spec.subdomain || 'authentik',
+        destination: {
+          host: this.#service.hostname,
+          port: {
+            number: 80,
           },
-        ],
+        },
       },
     });
   };

@@ -8,7 +8,7 @@ kind: Environment
 metadata:
   name: dev
 spec:
-  domain: one.dev.olsen.cloud
-  networkIp: 192.168.107.2
+  domain: mortenolsen.net
+  networkIp: 192.168.64.2
   tls:
     issuer: lets-encrypt-prod

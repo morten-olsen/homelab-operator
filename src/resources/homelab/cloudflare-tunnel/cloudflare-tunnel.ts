@@ -12,6 +12,7 @@ import { RepoService } from '#bootstrap/repos/repos.ts';
 import { Secret } from '#resources/core/secret/secret.ts';
 import { NotReadyError } from '#utils/errors.ts';
 import { NamespaceService } from '#bootstrap/namespaces/namespaces.ts';
+import { CloudflareService } from '#services/cloudflare/cloudflare.ts';
 
 const specSchema = z.object({});
 
@@ -29,6 +30,7 @@ class CloudflareTunnel extends CustomResource<typeof specSchema> {
 
   #helmRelease: HelmRelease;
   #secret: Secret<SecretData>;
+  #cloudflareService;
 
   constructor(options: CustomResourceOptions<typeof specSchema>) {
     super(options);
@@ -40,6 +42,9 @@ class CloudflareTunnel extends CustomResource<typeof specSchema> {
     this.#helmRelease = resourceService.get(HelmRelease, this.name, namespace);
     this.#secret = resourceService.get(Secret<SecretData>, 'cloudflare', namespace);
     this.#secret.on('changed', this.queueReconcile);
+
+    this.#cloudflareService = this.services.get(CloudflareService);
+    this.#cloudflareService.on('changed', this.queueReconcile);
   }
 
   #handleResourceChanged = (resource: Resource<ExpectedAny>) => {
@@ -60,6 +65,18 @@ class CloudflareTunnel extends CustomResource<typeof specSchema> {
       hostname: rule?.hostname,
       service: `http://${rule?.destination.host}:${rule?.destination.port.number}`,
     }));
+    if (this.#cloudflareService.ready) {
+      for (const route of ingress) {
+        if (!route.hostname) {
+          continue;
+        }
+        try {
+          await this.#cloudflareService.ensureTunnel(route.hostname);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    }
     await this.#helmRelease.ensure({
       metadata: {
         ownerReferences: [this.ref],

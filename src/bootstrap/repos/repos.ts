@@ -9,6 +9,7 @@ class RepoService {
   #istio: HelmRepo;
   #authentik: HelmRepo;
   #cloudflare: HelmRepo;
+  #argo: HelmRepo;
 
   constructor(services: Services) {
     const resourceService = services.get(ResourceService);
@@ -16,11 +17,13 @@ class RepoService {
     this.#istio = resourceService.get(HelmRepo, 'istio', NAMESPACE);
     this.#authentik = resourceService.get(HelmRepo, 'authentik', NAMESPACE);
     this.#cloudflare = resourceService.get(HelmRepo, 'cloudflare', NAMESPACE);
+    this.#argo = resourceService.get(HelmRepo, 'argo', NAMESPACE);
 
     this.#jetstack.on('changed', this.ensure);
     this.#istio.on('changed', this.ensure);
     this.#authentik.on('changed', this.ensure);
     this.#cloudflare.on('changed', this.ensure);
+    this.#argo.on('changed', this.ensure);
   }
 
   public get jetstack() {
@@ -39,6 +42,10 @@ class RepoService {
     return this.#cloudflare;
   }
 
+  public get argo() {
+    return this.#argo;
+  }
+
   public ensure = async () => {
     await this.#jetstack.set({
       url: 'https://charts.jetstack.io',
@@ -54,6 +61,10 @@ class RepoService {
 
     await this.#cloudflare.set({
       url: 'https://cloudflare.github.io/helm-charts',
+    });
+
+    await this.#argo.set({
+      url: 'https://argoproj.github.io/argo-helm',
     });
   };
 }

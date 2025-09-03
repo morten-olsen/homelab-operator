@@ -14,6 +14,8 @@ import { Gateway } from '#resources/istio/gateway/gateway.ts';
 import { NotReadyError } from '#utils/errors.ts';
 import { NamespaceService } from '#bootstrap/namespaces/namespaces.ts';
 import { CloudflareService } from '#services/cloudflare/cloudflare.ts';
+import { HelmRelease } from '#resources/flux/helm-release/helm-release.ts';
+import { RepoService } from '#bootstrap/repos/repos.ts';
 
 const specSchema = z.object({
   domain: z.string(),
@@ -37,6 +39,8 @@ class Environment extends CustomResource<typeof specSchema> {
   #redisServer: RedisServer;
   #authentikServer: AuthentikServer;
   #cloudflareService: CloudflareService;
+  #argoRelease: HelmRelease;
+  #argoNamespace: Namespace;
 
   constructor(options: CustomResourceOptions<typeof specSchema>) {
     super(options);
@@ -67,6 +71,11 @@ class Environment extends CustomResource<typeof specSchema> {
 
     this.#authentikServer = resourceService.get(AuthentikServer, `${this.name}-authentik`, homelabNamespace);
     this.#authentikServer.on('changed', this.queueReconcile);
+
+    this.#argoNamespace = resourceService.get(Namespace, `${this.name}-argo`);
+
+    this.#argoRelease = resourceService.get(HelmRelease, `${this.name}-argo`, homelabNamespace);
+    this.#argoRelease.on('changed', this.queueReconcile);
   }
 
   public get certificate() {
@@ -99,27 +108,6 @@ class Environment extends CustomResource<typeof specSchema> {
       throw new NotReadyError('InvalidSpec');
     }
 
-    if (this.#cloudflareService.ready && spec.networkIp) {
-      const client = this.#cloudflareService.client;
-      const zones = await client.zones.list({
-        name: spec.domain,
-      });
-      const [zone] = zones.result;
-      if (!zone) {
-        throw new NotReadyError('NoZoneFound');
-      }
-
-      const existingRecords = await client.dns.records.list({
-        zone_id: zone.id,
-        name: {
-          exact: `*.${spec.domain}`,
-        },
-      });
-
-      console.log('Cloudflare records', existingRecords);
-
-      // zones.result[0].
-    }
     await this.#namespace.ensure({
       metadata: {
         labels: {
@@ -206,6 +194,29 @@ class Environment extends CustomResource<typeof specSchema> {
             },
           },
         ],
+      },
+    });
+
+    await this.#argoNamespace.ensure({});
+
+    const repoService = this.services.get(RepoService);
+    await this.#argoRelease.ensure({
+      spec: {
+        targetNamespace: this.#argoNamespace.name,
+        interval: '1h',
+        values: {},
+        chart: {
+          spec: {
+            chart: 'argo-cd',
+            version: '3.9.0',
+            sourceRef: {
+              apiVersion: 'source.toolkit.fluxcd.io/v1',
+              kind: 'HelmRepository',
+              name: repoService.argo.name,
+              namespace: repoService.argo.namespace,
+            },
+          },
+        },
       },
     });
   };

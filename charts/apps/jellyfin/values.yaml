@@ -1,0 +1,6 @@
+image:
+  repository: docker.io/jellyfin/jellyfin
+  tag: latest
+  pullPolicy: IfNotPresent
+environment: dev
+subdomain: jellyfin

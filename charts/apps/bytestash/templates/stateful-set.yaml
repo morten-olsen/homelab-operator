@@ -42,11 +42,6 @@ spec:
                   name: '{{ .Release.Name }}-client'
                   key: configuration
 
-            # !! IMPORTANT !!
-            # You MUST update this Redirect URI to match your external URL.
-            # This URI must also be configured in your Authentik provider settings for this client.
-            #- name: BS_OIDC_REDIRECT_URI
-            #value: 'https://bytestash.your-domain.com/login/oauth2/code/oidc'
           volumeMounts:
             - mountPath: /data/snippets
               name: bytestash-data

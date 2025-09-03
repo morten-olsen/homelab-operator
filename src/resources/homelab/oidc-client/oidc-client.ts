@@ -19,7 +19,8 @@ const specSchema = z.object({
   clientType: z.enum(ClientTypeEnum).optional(),
   redirectUris: z.array(
     z.object({
-      url: z.string(),
+      subdomain: z.string(),
+      path: z.string(),
       matchingMode: z.enum(['strict', 'regex']),
     }),
   ),
@@ -98,8 +99,14 @@ class OIDCClient extends CustomResource<typeof specSchema> {
       token: authentikSecret.token,
     });
 
+    const redirectUris = this.spec.redirectUris.map((uri) => ({
+      matchingMode: uri.matchingMode,
+      url: new URL(uri.path, `https://${uri.subdomain}.${this.#environment.current?.spec?.domain}`).toString(),
+    }));
+
     await authentikServer.upsertClient({
       ...this.spec,
+      redirectUris,
       name: this.name,
       secret: secret.clientSecret,
     });
