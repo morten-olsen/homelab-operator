@@ -6,9 +6,9 @@ metadata:
 apiVersion: homelab.mortenolsen.pro/v1
 kind: Environment
 metadata:
-  name: dev
+  name: prod
 spec:
-  domain: mortenolsen.net
-  networkIp: 192.168.64.2
+  domain: olsen.cloud
+  networkIp: 192.168.20.180
   tls:
     issuer: lets-encrypt-prod

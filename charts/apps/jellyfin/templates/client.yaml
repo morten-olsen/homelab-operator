@@ -5,6 +5,6 @@ metadata:
 spec:
   environment: '{{ .Values.environment }}'
   redirectUris:
-    - path: /api/auth/oidc/callback
+    - path: /sso/OID/redirect/Authentik
       subdomain: '{{ .Values.subdomain }}'
       matchingMode: strict

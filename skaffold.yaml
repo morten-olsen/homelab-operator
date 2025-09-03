@@ -4,16 +4,10 @@ metadata:
   name: homelab-operator
 
 build:
-  # This tells Skaffold to build the image locally using your Docker daemon.
-  local:
-    push: false
-    # This is the crucial part for your workflow. Instead of pushing to a
-    # registry, it loads the built image directly into your cluster's nodes.
-    # load: true
+  cluster: {}
   artifacts:
-    # Defines the image to build. It matches the placeholder in deployment.yaml.
     - image: homelaboperator
-      context: . # The build context is the root directory
+      context: .
       docker:
         dockerfile: Dockerfile
 
