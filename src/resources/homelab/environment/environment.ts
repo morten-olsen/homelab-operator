@@ -204,7 +204,11 @@ class Environment extends CustomResource<typeof specSchema> {
       spec: {
         targetNamespace: this.#argoNamespace.name,
         interval: '1h',
-        values: {},
+        values: {
+          applicationset: {
+            enabled: true,
+          },
+        },
         chart: {
           spec: {
             chart: 'argo-cd',
