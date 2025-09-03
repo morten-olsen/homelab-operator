@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homelab-root
+  namespace: '{{ .Values.globals.env }}-argo'
+spec:
+  project: default
+  source:
+    repoURL: '{{ .Values.repo }}'
+    targetRevision: '{{ .Values.ref }}'
+    path: charts/root
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: '{{ .Values.globals.env }}-argo'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
