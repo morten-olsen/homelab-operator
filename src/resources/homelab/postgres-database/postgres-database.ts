@@ -26,6 +26,7 @@ type SecretData = {
   database: string;
   host: string;
   port: string;
+  url: string;
 };
 
 const sanitizeName = (input: string) => {
@@ -87,15 +88,22 @@ class PostgresDatabase extends CustomResource<typeof specSchema> {
       throw new NotReadyError('MissingClusterSecret');
     }
 
+    const expected = {
+      password: generateRandomHexPass(),
+      user: this.username,
+      database: this.database,
+      ...this.#secret.value,
+      host: clusterSecret.host,
+      port: clusterSecret.port,
+    };
+
+    const url = `postgresql://${expected.user}:${expected.password}@${expected.host}:${expected.port}/${expected.database}`;
+
     await this.#secret.set(
-      (current) => ({
-        password: generateRandomHexPass(),
-        user: this.username,
-        database: this.database,
-        ...current,
-        host: clusterSecret.host,
-        port: clusterSecret.port,
-      }),
+      {
+        ...expected,
+        url,
+      },
       {
         metadata: {
           ownerReferences: [this.ref],

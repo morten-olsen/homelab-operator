@@ -40,7 +40,7 @@ class GenerateSecret extends CustomResource<typeof specSchema> {
       ...current,
     };
 
-    await this.#secret.ensure(expected);
+    await this.#secret.set(expected);
   };
 }
 

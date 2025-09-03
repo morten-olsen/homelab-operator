@@ -1,0 +1,8 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+image:
+  repository: docker.gitea.com/gitea
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: gitea

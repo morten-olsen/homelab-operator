@@ -1,0 +1,8 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+image:
+  repository: ghcr.io/metatool-ai/metamcp
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: metamcp

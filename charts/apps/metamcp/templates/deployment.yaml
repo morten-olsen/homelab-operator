@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{ .Release.Name }}'
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: '{{ .Release.Name }}'
+  template:
+    metadata:
+      labels:
+        app: '{{ .Release.Name }}'
+    spec:
+      containers:
+        - name: '{{ .Release.Name }}'
+          image: '{{ .Values.image.repository }}:{{ .Values.image.tag }}'
+          imagePullPolicy: '{{ .Values.image.pullPolicy }}'
+          ports:
+            - name: http
+              containerPort: 12008
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - mountPath: /data
+              name: data
+          env:
+            - name: TZ
+              value: '{{ .Values.globals.timezone }}'
+            - name: APP_URL
+              value: https://metamcp.olsen.cloud # TODO: Change
+            - name: NEXT_PUBLIC_APP_URL
+              value: https://metamcp.olsen.cloud # TODO: Change
+            - name: BETTER_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: '{{ .Release.Name }}-secrets'
+                  key: betterauth
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: '{{ .Release.Name }}-pg-connection'
+                  key: url
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: '{{ .Release.Name }}-pg-connection'
+                  key: database
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: '{{ .Release.Name }}-pg-connection'
+                  key: host
+            - name: POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: '{{ .Release.Name }}-pg-connection'
+                  key: port
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: '{{ .Release.Name }}-pg-connection'
+                  key: user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: '{{ .Release.Name }}-pg-connection'
+                  key: password
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: '{{ .Release.Name }}-data'
