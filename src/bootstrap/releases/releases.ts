@@ -1,56 +1,26 @@
-import { HelmReleaseInstance } from '../../instances/helm-release.ts';
 import { ResourceService } from '../../services/resources/resources.ts';
 import { NAMESPACE } from '../../utils/consts.ts';
 import { Services } from '../../utils/service.ts';
 import { NamespaceService } from '../namespaces/namespaces.ts';
 import { RepoService } from '../repos/repos.ts';
 
+import { HelmRelease } from '#resources/flux/helm-release/helm-release.ts';
+
 class ReleaseService {
   #services: Services;
-  #certManager: HelmReleaseInstance;
-  #istioBase: HelmReleaseInstance;
-  #istiod: HelmReleaseInstance;
-  #istioGateway: HelmReleaseInstance;
+  #certManager: HelmRelease;
+  #istioBase: HelmRelease;
+  #istiod: HelmRelease;
+  #istioGateway: HelmRelease;
 
   constructor(services: Services) {
     this.#services = services;
     const resourceService = services.get(ResourceService);
-    this.#certManager = resourceService.getInstance(
-      {
-        apiVersion: 'helm.toolkit.fluxcd.io/v2',
-        kind: 'HelmRelease',
-        name: 'cert-manager',
-        namespace: NAMESPACE,
-      },
-      HelmReleaseInstance,
-    );
-    this.#istioBase = resourceService.getInstance(
-      {
-        apiVersion: 'helm.toolkit.fluxcd.io/v2',
-        kind: 'HelmRelease',
-        name: 'istio-base',
-        namespace: NAMESPACE,
-      },
-      HelmReleaseInstance,
-    );
-    this.#istiod = resourceService.getInstance(
-      {
-        apiVersion: 'helm.toolkit.fluxcd.io/v2',
-        kind: 'HelmRelease',
-        name: 'istiod',
-        namespace: NAMESPACE,
-      },
-      HelmReleaseInstance,
-    );
-    this.#istioGateway = resourceService.getInstance(
-      {
-        apiVersion: 'helm.toolkit.fluxcd.io/v2',
-        kind: 'HelmRelease',
-        name: 'istio-gateway',
-        namespace: NAMESPACE,
-      },
-      HelmReleaseInstance,
-    );
+    this.#certManager = resourceService.get(HelmRelease, 'cert-manager', NAMESPACE);
+    this.#istioBase = resourceService.get(HelmRelease, 'istio-base', NAMESPACE);
+    this.#istiod = resourceService.get(HelmRelease, 'istiod', NAMESPACE);
+    this.#istioGateway = resourceService.get(HelmRelease, 'istio-gateway', NAMESPACE);
+
     this.#certManager.on('changed', this.ensure);
     this.#istioBase.on('changed', this.ensure);
     this.#istiod.on('changed', this.ensure);

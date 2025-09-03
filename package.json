@@ -22,6 +22,8 @@
   "dependencies": {
     "@goauthentik/api": "2025.6.3-1751754396",
     "@kubernetes/client-node": "^1.3.0",
+    "cloudflare": "^4.5.0",
+    "cron": "^4.3.3",
     "debounce": "^2.2.0",
     "deep-equal": "^2.2.3",
     "dotenv": "^17.2.1",
@@ -34,6 +36,12 @@
     "sqlite3": "^5.1.7",
     "yaml": "^2.8.0",
     "zod": "^4.0.14"
+  },
+  "imports": {
+    "#services/*": "./src/services/*",
+    "#resources/*": "./src/resources/*",
+    "#bootstrap/*": "./src/bootstrap/*",
+    "#utils/*": "./src/utils/*"
   },
   "packageManager": "pnpm@10.6.0",
   "pnpm": {

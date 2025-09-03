@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: test-example-com
+  namespace: dev
+spec:
+  hosts:
+    - authentik.one.dev.olsen.cloud
+      # (the address field is optional if you use 'resolution: DNS')
+  ports:
+    - number: 80
+      name: https
+      protocol: HTTPS
+  resolution: DNS

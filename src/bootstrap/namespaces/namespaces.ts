@@ -1,38 +1,19 @@
-import { NamespaceInstance } from '../../instances/namespace.ts';
 import type { Services } from '../../utils/service.ts';
 import { ResourceService } from '../../services/resources/resources.ts';
 
+import { Namespace } from '#resources/core/namespace/namespace.ts';
+
 class NamespaceService {
-  #homelab: NamespaceInstance;
-  #istioSystem: NamespaceInstance;
-  #certManager: NamespaceInstance;
+  #homelab: Namespace;
+  #istioSystem: Namespace;
+  #certManager: Namespace;
 
   constructor(services: Services) {
     const resourceService = services.get(ResourceService);
-    this.#homelab = resourceService.getInstance(
-      {
-        apiVersion: 'v1',
-        kind: 'Namespace',
-        name: 'homelab',
-      },
-      NamespaceInstance,
-    );
-    this.#istioSystem = resourceService.getInstance(
-      {
-        apiVersion: 'v1',
-        kind: 'Namespace',
-        name: 'istio-system',
-      },
-      NamespaceInstance,
-    );
-    this.#certManager = resourceService.getInstance(
-      {
-        apiVersion: 'v1',
-        kind: 'Namespace',
-        name: 'cert-manager',
-      },
-      NamespaceInstance,
-    );
+    this.#homelab = resourceService.get(Namespace, 'homelab');
+    this.#istioSystem = resourceService.get(Namespace, 'istio-system');
+    this.#certManager = resourceService.get(Namespace, 'cert-manager');
+
     this.#homelab.on('changed', this.ensure);
     this.#istioSystem.on('changed', this.ensure);
     this.#certManager.on('changed', this.ensure);

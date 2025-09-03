@@ -9,12 +9,19 @@ const decodeSecret = <T extends Record<string, string>>(
   ) as T;
 };
 
-const encodeSecret = <T extends Record<string, string>>(data: T | undefined): Record<string, string> | undefined => {
+const encodeSecret = <T extends Record<string, string | undefined>>(
+  data: T | undefined,
+): Record<string, string> | undefined => {
   if (!data) {
     return undefined;
   }
   return Object.fromEntries(
-    Object.entries(data).map(([name, value]) => [name, Buffer.from(value, 'utf8').toString('base64')]),
+    Object.entries(data).map(([name, value]) => [name, Buffer.from(value || '', 'utf8').toString('base64')]),
   );
 };
-export { decodeSecret, encodeSecret };
+
+const generateRandomHexPass = (bytes = 32) => {
+  return `pass_${Buffer.from(crypto.getRandomValues(new Uint8Array(bytes))).toString('hex')}`;
+};
+
+export { decodeSecret, encodeSecret, generateRandomHexPass };

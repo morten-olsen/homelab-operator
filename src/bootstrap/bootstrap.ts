@@ -1,9 +1,10 @@
+import { CloudflareTunnel } from '#resources/homelab/cloudflare-tunnel/cloudflare-tunnel.ts';
+import { ResourceService } from '#services/resources/resources.ts';
 import type { Services } from '../utils/service.ts';
 
 import { NamespaceService } from './namespaces/namespaces.ts';
 import { ReleaseService } from './releases/releases.ts';
 import { RepoService } from './repos/repos.ts';
-import { ClusterIssuerService } from './resources/issuer.ts';
 
 class BootstrapService {
   #services: Services;
@@ -23,15 +24,18 @@ class BootstrapService {
     return this.#services.get(ReleaseService);
   }
 
-  public get clusterIssuer() {
-    return this.#services.get(ClusterIssuerService);
+  public get cloudflareTunnel() {
+    const resourceService = this.#services.get(ResourceService);
+    return resourceService.get(CloudflareTunnel, 'cloudflare-tunnel', this.namespaces.homelab.name);
   }
 
   public ensure = async () => {
     await this.namespaces.ensure();
     await this.repos.ensure();
     await this.releases.ensure();
-    await this.clusterIssuer.ensure();
+    await this.cloudflareTunnel.ensure({
+      spec: {},
+    });
   };
 }
 
