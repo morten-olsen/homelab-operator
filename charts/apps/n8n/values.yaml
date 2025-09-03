@@ -1,0 +1,8 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+image:
+  repository: docker.n8n.io/n8nio/n8n
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: n8n

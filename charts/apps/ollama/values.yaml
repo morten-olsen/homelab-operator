@@ -1,0 +1,7 @@
+globals:
+  environment: prod
+image:
+  repository: ollama/ollama
+  tag: 0.11.8
+  pullPolicy: IfNotPresent
+subdomain: openwebui

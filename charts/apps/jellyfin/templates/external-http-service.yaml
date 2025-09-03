@@ -3,7 +3,7 @@ kind: ExternalHttpService
 metadata:
   name: '{{ .Release.Name }}'
 spec:
-  environment: '{{ .Values.environment }}'
+  environment: '{{ .Values.globals.environment }}'
   subdomain: '{{ .Values.subdomain }}'
   destination:
     host: '{{ .Release.Name }}.{{ .Release.Namespace }}.svc.cluster.local'

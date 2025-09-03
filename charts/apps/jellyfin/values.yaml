@@ -1,6 +1,7 @@
+globals:
+  environment: prod
 image:
   repository: docker.io/jellyfin/jellyfin
   tag: latest
   pullPolicy: IfNotPresent
-environment: prod
 subdomain: jellyfin

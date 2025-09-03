@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: '{{ .Release.Name }}'
   labels:
@@ -17,11 +17,15 @@ spec:
     spec:
       containers:
         - name: '{{ .Release.Name }}'
-          image: ghcr.io/jordan-dalby/bytestash:latest
+          image: ghcr.io/miniflux/miniflux:latest
           ports:
-            - containerPort: 5000
+            - containerPort: 8080
               name: http
           env:
+            - name: ALLOW_NEW_ACCOUNTS
+              value: 'true'
+            - name: DISABLE_INTERNAL_ACCOUNTS
+              value: 'true'
             - name: OIDC_ENABLED
               value: 'true'
             - name: OIDC_DISPLAY_NAME
@@ -44,20 +48,8 @@ spec:
 
           volumeMounts:
             - mountPath: /data/snippets
-              name: bytestash-data
-
-      # Defines security context for the pod to avoid running as root.
-      # securityContext:
-      #   runAsUser: 1000
-      #   runAsGroup: 1000
-      #   fsGroup: 1000
-
-  volumeClaimTemplates:
-    - metadata:
-        name: bytestash-data
-      spec:
-        accessModes: ['ReadWriteOnce']
-        storageClassName: '{{ .Values.environment }}'
-        resources:
-          requests:
-            storage: 5Gi
+              name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: '{{ .Release.Name }}-data'

@@ -6,5 +6,5 @@ spec:
   environment: '{{ .Values.environment }}'
   redirectUris:
     - path: /sso/OID/redirect/Authentik
-      subdomain: '{{ .Values.subdomain }}'
+      subdomain: '{{ .Values.globals.subdomain }}'
       matchingMode: strict

@@ -10,19 +10,17 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: manual
-  hostPath: null
+  storageClassName: manual-movies
   nfs:
     path: '{{ .Values.movies.path }}'
     server: '{{ .Values.host }}'
-    readOnly: true
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: movies
 spec:
-  storageClassName: manual
+  storageClassName: manual-movies
   accessModes:
     - ReadWriteMany
   resources:

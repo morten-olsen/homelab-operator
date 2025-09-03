@@ -20,7 +20,7 @@ spec:
           imagePullPolicy: '{{ .Values.image.pullPolicy }}'
           ports:
             - name: http
-              containerPort: 8096
+              containerPort: 11434
               protocol: TCP
           livenessProbe:
             tcpSocket:
@@ -29,24 +29,10 @@ spec:
             tcpSocket:
               port: http
           volumeMounts:
-            - mountPath: /config
-              name: config
-            - mountPath: /media/movies
-              name: movies
-            - mountPath: /media/tv-shows
-              name: tvshows
-            - mountPath: /media/music
-              name: music
+            - mountPath: /root/.ollama
+              name: data
+
       volumes:
-        - name: config
+        - name: data
           persistentVolumeClaim:
-            claimName: '{{ .Release.Name }}-config'
-        - name: movies
-          persistentVolumeClaim:
-            claimName: movies
-        - name: tvshows
-          persistentVolumeClaim:
-            claimName: tvshows
-        - name: music
-          persistentVolumeClaim:
-            claimName: music
+            claimName: '{{ .Release.Name }}-data'
