@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: homelab-apps
+  namespace: '{{ .Values.env }}-argo'
+spec:
+  generators:
+    - directory:
+        path: charts/apps
+        recurse: false
+        include: '.*'
+        filter: |
+          .is_dir == true and (.path | endswith(".disabled") | not)
+  template:
+    metadata:
+      name: '{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: '{{ .Values.repo }}'
+        targetRevision: '{{ .Values.ref }}'
+        path: charts/apps/{{path.basename}}
+        helm:
+          values: |
+            global: {{ .Values.global | toYaml | nindent 14 }}
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ .Values.globals.env }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
