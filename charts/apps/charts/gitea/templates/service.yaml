@@ -13,3 +13,20 @@ spec:
       name: http
   selector:
     app: '{{ .Release.Name }}'
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: '{{ .Release.Name }}-ssh'
+  labels:
+    app: '{{ .Release.Name }}'
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 2202
+      targetPort: 22
+      protocol: TCP
+      name: ssh
+  selector:
+    app: '{{ .Release.Name }}'

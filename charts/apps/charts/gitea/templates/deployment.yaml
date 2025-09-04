@@ -22,6 +22,9 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
+            - name: ssh
+              containerPort: 22
+              protocol: TCP
           livenessProbe:
             tcpSocket:
               port: http
@@ -40,8 +43,8 @@ spec:
               value: '1000'
             - name: GITEA__service__REQUIRE_EXTERNAL_REGISTRATION_PASSWORD
               value: 'true'
-            - name: GITEA__service__ENABLE_BASIC_AUTHENTICATION
-              value: 'true'
+            #- name: GITEA__service__ENABLE_BASIC_AUTHENTICATION
+            #  value: 'true'
             - name: GITEA__service__ENABLE_PASSWORD_SIGNIN_FORM
               value: 'false'
             - name: GITEA__service__DEFAULT_KEEP_EMAIL_PRIVATE
