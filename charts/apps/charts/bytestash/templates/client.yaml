@@ -6,5 +6,5 @@ spec:
   environment: '{{ .Values.globals.environment }}'
   redirectUris:
     - path: /api/auth/oidc/callback
-      subdomain: bytestash
+      subdomain: '{{ .Values.subdomain }}'
       matchingMode: strict

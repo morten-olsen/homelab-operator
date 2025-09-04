@@ -1,0 +1,7 @@
+globals:
+  environment: prod
+image:
+  repository: headscale/headscale
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: headscale
