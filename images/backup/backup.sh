@@ -23,7 +23,7 @@ restic backup \
   -r "$RESTIC_REPOSITORY"
   "$SOURCE_DIR" \
   --verbose \
-  --tag "daily" \
+  --tag "daily"
 
 if [ $? -eq 0 ]; then
   echo "Restic backup completed successfully!"
