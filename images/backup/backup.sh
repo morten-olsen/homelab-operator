@@ -20,6 +20,7 @@ restic init --repo "$RESTIC_REPOSITORY" || true
 
 echo "Running Restic backup..."
 restic backup \
+  -r "$RESTIC_REPOSITORY"
   "$SOURCE_DIR" \
   --verbose \
   --tag "daily" \
