@@ -11,9 +11,22 @@ spec:
       targetPort: 8080
       protocol: TCP
       name: http
-    - name: wireguard-udp # TODO: should this be a LB service?
-      port: 41641
+  selector:
+    app: '{{ .Release.Name }}'
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: '{{ .Release.Name }}-headscale'
+  labels:
+    app: '{{ .Release.Name }}'
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 41641
       targetPort: 41641
       protocol: UDP
+      name: wireguard-udp
   selector:
     app: '{{ .Release.Name }}'

@@ -1,0 +1,7 @@
+globals:
+  environment: prod
+image:
+  repository: ghcr.io/coder/coder
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: coder
