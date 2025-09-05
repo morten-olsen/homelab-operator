@@ -1,4 +1,0 @@
-globals:
-  env: prod
-repo: https://github.com/morten-olsen/homelab-operator.git
-ref: HEAD

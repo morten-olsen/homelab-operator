@@ -9,3 +9,5 @@ books:
   path: /mnt/HDD/Books
 podcasts:
   path: /mnt/HDD/Podcasts
+pictures:
+  path: /mnt/HDD/Pictures

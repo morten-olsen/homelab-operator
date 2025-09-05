@@ -1,4 +1,4 @@
 globals:
   environment: prod
-graphana:
+grafana:
   subdomain: grafana

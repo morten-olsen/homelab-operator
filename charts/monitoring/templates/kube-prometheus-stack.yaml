@@ -1,7 +1,7 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: '{{ .Release.Name }}-prometheus-community'
+  name: "{{ .Release.Name }}-prometheus-community"
 spec:
   interval: 1h
   url: https://prometheus-community.github.io/helm-charts/
@@ -10,7 +10,7 @@ spec:
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: '{{ .Release.Name }}-prometheus-community'
+  name: "{{ .Release.Name }}-prometheus-community"
 spec:
   chart:
     spec:
@@ -19,33 +19,35 @@ spec:
       sourceRef:
         apiVersion: source.toolkit.fluxcd.io/v1
         kind: HelmRepository
-        name: '{{ .Release.Name }}-prometheus-community'
-        namespace: '{{ .Release.Namespace }}'
+        name: "{{ .Release.Name }}-prometheus-community"
+        namespace: "{{ .Release.Namespace }}"
   interval: 1h
-  values: {}
+  values:
+    grafana:
+      env:
+        GF_SERVER_ROOT_URL: https://grafana.olsen.cloud # TODO
 
 ---
 apiVersion: homelab.mortenolsen.pro/v1
 kind: HttpService
 metadata:
-  name: '{{ .Release.Name }}-prometheus-community'
+  name: "{{ .Release.Name }}-prometheus-community"
 spec:
-  environment: '{{ .Values.globals.environment }}'
-  subdomain: '{{ .Values.graphana.subdomain }}'
+  environment: "{{ .Values.globals.environment }}"
+  subdomain: "{{ .Values.grafana.subdomain }}"
   destination:
-    host: '{{ .Release.Name }}-prometheus-community-grafana.{{ .Release.Namespace }}.svc.cluster.local'
+    host: "{{ .Release.Name }}-prometheus-community-grafana.{{ .Release.Namespace }}.svc.cluster.local"
     port:
       number: 80
 
 ---
 apiVersion: homelab.mortenolsen.pro/v1
-kind: HttpService
+kind: OidcClient
 metadata:
-  name: '{{ .Release.Name }}-prometheus-community-alertmanager'
+  name: "{{ .Release.Name }}-grafana"
 spec:
-  environment: '{{ .Values.globals.environment }}'
-  subdomain: '{{ .Values.graphana.subdomain }}-alertmanager'
-  destination:
-    host: '{{ .Release.Name }}-prometheus-comm-alertmanager.{{ .Release.Namespace }}.svc.cluster.local'
-    port:
-      number: 9093
+  environment: "{{ .Values.globals.environment }}"
+  redirectUris:
+    - path: /login/generic_oauth
+      subdomain: "{{ .Values.grafana.subdomain }}"
+      matchingMode: strict
