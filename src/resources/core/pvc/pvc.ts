@@ -4,6 +4,7 @@ import { StorageClass } from '../storage-class/storage-class.ts';
 import { PersistentVolume } from '../pv/pv.ts';
 
 import { Resource, ResourceService, type ResourceOptions } from '#services/resources/resources.ts';
+import { chmod, mkdir } from 'fs/promises';
 
 const PROVISIONER = 'homelab-operator';
 
@@ -41,6 +42,12 @@ class PVC extends Resource<V1PersistentVolumeClaim> {
     const resourceService = this.services.get(ResourceService);
     const pv = resourceService.get(PersistentVolume, pvName);
 
+    try {
+      await mkdir(target, { recursive: true });
+    } catch (error) {
+      console.error('Error creating directory', error);
+    }
+
     await pv.ensure({
       metadata: {
         name: pvName,
@@ -74,6 +81,11 @@ class PVC extends Resource<V1PersistentVolumeClaim> {
         },
       },
     });
+    try {
+      await chmod(target, 0o777);
+    } catch (error) {
+      console.error('Error changing directory permissions', error);
+    }
   };
 }
 
