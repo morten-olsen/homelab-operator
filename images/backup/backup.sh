@@ -16,14 +16,13 @@ mkdir -p "/mnt/backup"
 echo "Starting Restic backup from $SOURCE_DIR to $RESTIC_REPOSITORY"
 
 echo "Checking/Initializing Restic repository..."
-restic init --repository "$RESTIC_REPOSITORY" || true
+restic init --repo "$RESTIC_REPOSITORY" || true
 
 echo "Running Restic backup..."
 restic backup \
   "$SOURCE_DIR" \
   --verbose \
   --tag "daily" \
-  --exclude-cache \
 
 if [ $? -eq 0 ]; then
   echo "Restic backup completed successfully!"
