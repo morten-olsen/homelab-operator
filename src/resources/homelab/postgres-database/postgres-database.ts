@@ -124,19 +124,23 @@ class PostgresDatabase extends CustomResource<typeof specSchema> {
       user: clusterSecret.user,
       password: clusterSecret.password,
     });
-    const connectionError = await database.ping();
-    if (connectionError) {
-      console.error('Failed to connect', connectionError);
-      throw new NotReadyError('FailedToConnectToDatabase');
+    try {
+      const connectionError = await database.ping();
+      if (connectionError) {
+        console.error('Failed to connect', connectionError);
+        throw new NotReadyError('FailedToConnectToDatabase');
+      }
+      await database.upsertRole({
+        name: secret.user,
+        password: secret.password,
+      });
+      await database.upsertDatabase({
+        name: secret.database,
+        owner: secret.user,
+      });
+    } finally {
+      await database.close();
     }
-    await database.upsertRole({
-      name: secret.user,
-      password: secret.password,
-    });
-    await database.upsertDatabase({
-      name: secret.database,
-      owner: secret.user,
-    });
   };
 }
 

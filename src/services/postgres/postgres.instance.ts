@@ -60,6 +60,10 @@ class PostgresInstance {
       await this.#db.raw(`ALTER DATABASE "${name}" OWNER TO "${owner}"`);
     }
   };
+
+  public close = async () => {
+    await this.#db.destroy();
+  };
 }
 
 export { PostgresInstance, type PostgresInstanceOptions };
