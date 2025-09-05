@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kubernetes Security Report</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 0.5in;
+    }
+    
+    body { 
+      font-family: Arial, sans-serif; 
+      font-size: 10px;
+      line-height: 1.3;
+      margin: 0;
+      padding: 0;
+    }
+    
+    h1 { 
+      color: #333; 
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    
+    h2 { 
+      color: #666; 
+      font-size: 14px;
+      margin: 15px 0 8px 0;
+    }
+    
+    table { 
+      border-collapse: collapse; 
+      width: 100%;
+      margin-bottom: 20px;
+      font-size: 8px;
+    }
+    
+    th, td { 
+      border: 1px solid #ccc; 
+      padding: 4px; 
+      text-align: left; 
+      vertical-align: top;
+      word-wrap: break-word;
+      max-width: 150px;
+    }
+    
+    th { 
+      background-color: #f5f5f5;
+      font-weight: bold;
+      font-size: 9px;
+    }
+    
+    .severity-critical { background-color: #ffebee; color: #c62828; font-weight: bold; }
+    .severity-high { background-color: #fff3e0; color: #ef6c00; font-weight: bold; }
+    .severity-medium { background-color: #fff8e1; color: #f57f17; }
+    .severity-low { background-color: #f3e5f5; color: #7b1fa2; }
+    
+    .resource-col { max-width: 120px; }
+    .vuln-id-col { max-width: 80px; }
+    .severity-col { max-width: 60px; text-align: center; }
+    .namespace-col { max-width: 80px; }
+    .description-col { max-width: 200px; font-size: 7px; }
+  </style>
+</head>
+<body>
+  <h1>Kubernetes Security Report</h1>
+
+  <h2>Vulnerabilities ({{ vulnerabilities|length }})</h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="vuln-id-col">CVE ID</th>
+        <th class="severity-col">Severity</th>
+        <th style="max-width: 180px;">Title</th>
+        <th style="max-width: 100px;">Package</th>
+        <th style="max-width: 60px;">Count</th>
+        <th style="max-width: 250px;">Affected Resources</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vuln in vulnerabilities %}
+        <tr>
+          <td class="vuln-id-col">{{ vuln.vulnerabilityID }}</td>
+          <td class="severity-col severity-{{ vuln.severity|lower }}">{{ vuln.severity }}</td>
+          <td style="max-width: 180px;">{{ vuln.title }}</td>
+          <td style="max-width: 100px;">{{ vuln.packagePURL or 'N/A' }}</td>
+          <td style="max-width: 60px; text-align: center;">{{ vuln.affected_resources|length }}</td>
+          <td style="max-width: 250px; font-size: 7px;">
+            {% for resource in vuln.affected_resources[:10] %}
+              {{ resource.namespace }}/{{ resource.resource }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+            {% if vuln.affected_resources|length > 10 %}
+              <br/><em>... and {{ vuln.affected_resources|length - 10 }} more</em>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Configuration Issues ({{ config_issues|length }})</h2>
+  <table>
+    <thead>
+      <tr>
+        <th class="vuln-id-col">Check ID</th>
+        <th class="severity-col">Severity</th>
+        <th style="max-width: 180px;">Title</th>
+        <th style="max-width: 200px;">Remediation</th>
+        <th style="max-width: 60px;">Count</th>
+        <th style="max-width: 200px;">Affected Resources</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for issue in config_issues %}
+        <tr>
+          <td class="vuln-id-col">{{ issue.checkID }}</td>
+          <td class="severity-col severity-{{ issue.severity|lower }}">{{ issue.severity }}</td>
+          <td style="max-width: 180px;">{{ issue.title }}</td>
+          <td style="max-width: 200px; font-size: 7px;">{{ issue.remediation }}</td>
+          <td style="max-width: 60px; text-align: center;">{{ issue.affected_resources|length }}</td>
+          <td style="max-width: 200px; font-size: 7px;">
+            {% for resource in issue.affected_resources[:8] %}
+              {{ resource.namespace }}/{{ resource.resource }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+            {% if issue.affected_resources|length > 8 %}
+              <br/><em>... and {{ issue.affected_resources|length - 8 }} more</em>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+
+</body>
+</html>

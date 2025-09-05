@@ -44,8 +44,8 @@ metadata:
   name: '{{ .Release.Name }}-prometheus-community-alertmanager'
 spec:
   environment: '{{ .Values.globals.environment }}'
-  subdomain: '{{ .Values.graphana.subdomain }}'
+  subdomain: '{{ .Values.graphana.subdomain }}-alertmanager'
   destination:
-    host: '{{ .Release.Name }}-prometheus-community-alertmanager.{{ .Release.Namespace }}.svc.cluster.local'
+    host: '{{ .Release.Name }}-prometheus-comm-alertmanager.{{ .Release.Namespace }}.svc.cluster.local'
     port:
       number: 9093

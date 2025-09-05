@@ -29,9 +29,9 @@ spec:
       server:
         http_listen_port: 3100
 
-      memberlist:
-        join_members:
-          - loki-memberlist
+      # memberlist:
+      #   join_members:
+      #     - loki-memberlist
 
       schemaConfig:
         configs:
