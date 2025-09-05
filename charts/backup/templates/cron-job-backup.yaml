@@ -31,7 +31,7 @@ spec:
                 - name: source
                   mountPath: "/mnt/source"
                 - name: target
-                  mountPath: "/mnt/backups"
+                  mountPath: "/mnt/backup"
                   subPath: "{{ $release.Name }}-{{ $key }}"
           volumes:
             - name: source
