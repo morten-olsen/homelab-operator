@@ -19,6 +19,7 @@ spec:
           containers:
             - name: "{{ $release.Name }}-{{ $key }}-cleanup"
               image: ghcr.io/morten-olsen/homelab-operator-backup:main
+              imagePullPolicy: Always
               command: ["/app/cleanup.sh"]
               env:
                 - name: RESTIC_PASSWORD

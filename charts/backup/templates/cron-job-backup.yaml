@@ -19,6 +19,7 @@ spec:
           containers:
             - name: "{{ $release.Name }}-{{ $key }}-backup"
               image: ghcr.io/morten-olsen/homelab-operator-backup:main
+              imagePullPolicy: Always
               command: ["/app/backup.sh"]
               env:
                 - name: RESTIC_PASSWORD
