@@ -1,7 +1,12 @@
+{{- $values := .Values -}}
+{{- $release := .Release -}}
+
+---
+{{- range $key, $value := $values.shares }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: books
+  name: "{{$key}}"
   labels:
     type: nfs
 spec:
@@ -10,19 +15,22 @@ spec:
   accessModes:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: manual-books
+  storageClassName: "manual-{{$key}}"
   nfs:
-    path: '{{ .Values.books.path }}'
-    server: '{{ .Values.host }}'
+    path: "{{ $value.path }}"
+    server: "{{ $values.host }}"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: books
+  name: "{{ $key }}"
 spec:
-  storageClassName: manual-books
+  storageClassName: "manual-{{ $key }}"
   accessModes:
     - ReadWriteMany
   resources:
     requests:
       storage: 10Gi
+---
+{{- end }}
+

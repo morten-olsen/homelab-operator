@@ -55,12 +55,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-        working-directory: operator
+        working-directory: images/operator
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Run tests
-        working-directory: operator
+        working-directory: images/operator
         run: pnpm test
 
   update-release-draft:
