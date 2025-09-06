@@ -1,0 +1,7 @@
+globals:
+  environment: prod
+image:
+  repository: ghcr.io/homarr-labs/homarr
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: homarr
