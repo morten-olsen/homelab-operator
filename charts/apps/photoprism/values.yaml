@@ -1,0 +1,7 @@
+globals:
+  environment: prod
+image:
+  repository: photoprism/photoprism
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: photoprism

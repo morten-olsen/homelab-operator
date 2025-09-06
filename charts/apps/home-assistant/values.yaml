@@ -1,0 +1,8 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+image:
+  repository: ghcr.io/home-assistant/home-assistant
+  tag: stable
+  pullPolicy: IfNotPresent
+subdomain: home-assistant
