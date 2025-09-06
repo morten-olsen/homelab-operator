@@ -1,50 +1,49 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: '{{ .Release.Name }}'
+  name: "{{ .Release.Name }}"
   labels:
-    app: '{{ .Release.Name }}'
+    app: "{{ .Release.Name }}"
 spec:
-  serviceName: '{{ .Release.Name }}-headless'
   replicas: 1
   selector:
     matchLabels:
-      app: '{{ .Release.Name }}'
+      app: "{{ .Release.Name }}"
   template:
     metadata:
       labels:
-        app: '{{ .Release.Name }}'
+        app: "{{ .Release.Name }}"
     spec:
       containers:
-        - name: '{{ .Release.Name }}'
+        - name: "{{ .Release.Name }}"
           image: ghcr.io/jordan-dalby/bytestash:latest
           ports:
             - containerPort: 5000
               name: http
           env:
             - name: ALLOW_NEW_ACCOUNTS
-              value: 'true'
+              value: "true"
             - name: DISABLE_INTERNAL_ACCOUNTS
-              value: 'true'
+              value: "true"
             - name: OIDC_ENABLED
-              value: 'true'
+              value: "true"
             - name: OIDC_DISPLAY_NAME
               value: OIDC
             - name: OIDC_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: '{{ .Release.Name }}-client'
+                  name: "{{ .Release.Name }}-client"
                   key: clientId
             - name: OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: '{{ .Release.Name }}-client'
+                  name: "{{ .Release.Name }}-client"
                   key: clientSecret
             - name: OIDC_ISSUER_URL
               valueFrom:
                 secretKeyRef:
-                  name: '{{ .Release.Name }}-client'
-                  key: configuration
+                  name: "{{ .Release.Name }}-client"
+                  key: configurationIssuer
 
           volumeMounts:
             - mountPath: /data/snippets
@@ -52,4 +51,4 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: '{{ .Release.Name }}-data'
+            claimName: "{{ .Release.Name }}-data"
