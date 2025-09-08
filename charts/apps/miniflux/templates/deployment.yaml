@@ -34,7 +34,11 @@ spec:
           env:
             - name: TZ
               value: "{{ .Values.globals.timezone }}"
+            - name: BASE_URL
+              value: https://{{ .Values.subdomain }}.{{ .Values.globals.domain }}
             - name: RUN_MIGRATIONS
+              value: "1"
+            - name: DISABLE_LOCAL_AUTH
               value: "1"
             - name: OAUTH2_CLIENT_ID
               valueFrom:
@@ -50,7 +54,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-client"
-                  key: configuration
+                  key: configurationIssuer
             - name: OAUTH2_OIDC_PROVIDER_NAME
               value: Authentik
             - name: OAUTH2_PROVIDER
