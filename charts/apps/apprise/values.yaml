@@ -3,7 +3,7 @@ globals:
   timezone: Europe/Amsterdam
   domain: olsen.cloud
 image:
-  repository: docker.n8n.io/n8nio/n8n
+  repository: docker.io/caronc/apprise
   tag: latest
   pullPolicy: IfNotPresent
-subdomain: n8n
+subdomain: apprise
