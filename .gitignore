@@ -1,2 +1,3 @@
 /secret.*.yaml
 /data/
+*.DS_Store
