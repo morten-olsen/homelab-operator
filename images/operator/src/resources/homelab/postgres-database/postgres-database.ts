@@ -97,7 +97,7 @@ class PostgresDatabase extends CustomResource<typeof specSchema> {
       port: clusterSecret.port,
     };
 
-    const url = `postgresql://${expected.user}:${expected.password}@${expected.host}:${expected.port}/${expected.database}`;
+    const url = `postgresql://${expected.user}:${expected.password}@${expected.host}:${expected.port}/${expected.database}?sslmode=disable`;
 
     await this.#secret.set(
       {
