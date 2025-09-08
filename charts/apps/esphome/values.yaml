@@ -1,0 +1,9 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+  domain: olsen.cloud
+image:
+  repository: ghcr.io/esphome/esphome
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: esphome

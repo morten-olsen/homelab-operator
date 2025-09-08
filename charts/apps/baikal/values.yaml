@@ -1,0 +1,9 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+  domain: olsen.cloud
+image:
+  repository: docker.io/ckulka/baikal
+  tag: nginx
+  pullPolicy: IfNotPresent
+subdomain: baikal
