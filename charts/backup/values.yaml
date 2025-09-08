@@ -1,3 +1,12 @@
+globals:
+  environment: prod
+  timezone: Europe/Amsterdam
+  domain: olsen.cloud
+image:
+  repository: garethgeorge/backrest
+  tag: latest
+  pullPolicy: IfNotPresent
+subdomain: restic
 password:
   name: backup
   key: password
