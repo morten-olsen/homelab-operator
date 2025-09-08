@@ -42,7 +42,9 @@ spec:
             - name: USER_GID
               value: "1000"
             - name: GITEA__server__SSH_DOMAIN
-              value: gitea-ssh.olsen.cloud
+              value: ssh-gitea.olsen.cloud
+            - name: GITEA__server__SSH_PORT
+              value: "2205"
             - name: GITEA__service__REQUIRE_EXTERNAL_REGISTRATION_PASSWORD
               value: "true"
             #- name: GITEA__service__ENABLE_BASIC_AUTHENTICATION
