@@ -6,6 +6,8 @@ metadata:
     app: "{{ .Release.Name }}"
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: "{{ .Release.Name }}"
@@ -14,8 +16,6 @@ spec:
       labels:
         app: "{{ .Release.Name }}"
     spec:
-      strategy:
-        type: Recreate
       initContainers:
         - name: render-config
           image: alpine:3.20
@@ -36,9 +36,14 @@ spec:
                 secretKeyRef:
                   name: "{{ .Release.Name }}-client"
                   key: clientSecret
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-cluster"
+                  key: password
           args:
             - |
-              apk add --no-cache gettext >/dev/null
+              apk add --no-cache gettext apache2-utils >/dev/null
               envsubst < /config-tpl/config.tpl.json > /config-out/config.json
               echo "Rendered /etc/zot/config.json"
               echo "---------------------------------------"
@@ -49,6 +54,7 @@ spec:
               echo "---------------------------------------"
               cat /config-out/secrets.json
               echo "---------------------------------------"
+              htpasswd -nbB cluster "$PASSWORD" > /config-out/htpasswd
           volumeMounts:
             - name: config-tpl
               mountPath: /config-tpl

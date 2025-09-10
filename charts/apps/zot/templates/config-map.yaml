@@ -36,6 +36,9 @@ data:
         },
         "auth": {
           "failDelay": 5,
+          "htpasswd": {
+            "path": "/etc/zot/htpasswd"
+          },
           "openid": {
             "providers": {
               "oidc": {
@@ -53,12 +56,22 @@ data:
             "actions": ["read", "create", "update", "delete"]
           },
           "repositories": {
+            "public/**": {
+              "anonymousPolicy": ["read"],
+              "defaultPolicy": ["read"],
+              "policies": [
+                {
+                  "users": ["*"],
+                  "actions": ["create", "update", "delete"]
+                }
+              ]
+            },
             "**": {
               "defaultPolicy": ["read"],
               "policies": [
                 {
                   "users": ["*"],
-                  "actions": ["push", "delete"]
+                  "actions": ["create", "update", "delete"]
                 }
               ]
             }
