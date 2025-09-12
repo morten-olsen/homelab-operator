@@ -6,3 +6,16 @@ image:
   tag: stable
   pullPolicy: IfNotPresent
 subdomain: home-assistant
+piper:
+  image:
+    repository: ghcr.io/morten-olsen/glados-voice
+    tag: main
+    pullPolicy: Always
+  model: en_US-glados-medium
+whisper:
+  image:
+    repository: rhasspy/wyoming-whisper
+    tag: latest
+    pullPolicy: IfNotPresent
+  model: tiny-int8
+  language: us
