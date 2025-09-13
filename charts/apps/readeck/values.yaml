@@ -4,6 +4,6 @@ globals:
   timezone: Europe/Amsterdam
 image:
   repository: codeberg.org/readeck/readeck
-  tag: latest
+  tag: latest@sha256:2fc8c3ce875db68fbfdc6cdd517a9315b14be65867116ffac26997e800def0ca
   pullPolicy: IfNotPresent
 subdomain: readeck

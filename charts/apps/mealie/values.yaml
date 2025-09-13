@@ -5,4 +5,4 @@ globals:
 subdomain: mealie
 image:
   repository: ghcr.io/mealie-recipes/mealie
-  tag: latest
+  tag: latest@sha256:d872fb529097df2d77b3c6f5e469b047f99d0d1c9f793a84ae27aa106e1f5d7e

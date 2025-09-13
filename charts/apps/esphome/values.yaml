@@ -4,6 +4,6 @@ globals:
   domain: olsen.cloud
 image:
   repository: ghcr.io/esphome/esphome
-  tag: latest
+  tag: latest@sha256:393775c4c02e0b09d086cd794815a723f90d4af7c3d871935e22be1a34c5d89a
   pullPolicy: IfNotPresent
 subdomain: esphome
