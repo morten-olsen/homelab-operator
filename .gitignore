@@ -1,3 +1,4 @@
 /secret.*.yaml
 /data/
+/.envrc
 *.DS_Store
