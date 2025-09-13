@@ -3,20 +3,24 @@
   "extends": [
     "config:base"
   ],
-  "helm-values": {
-    "managerFilePatterns": ["^charts/.*/values\\.yaml$"]
-  },
   "packageRules": [
     {
-      "matchUpdateTypes": ["major"],
-      "groupName": null,
+      "matchDatasources": ["docker"],
       "pinDigests": true
-    },
+    }
+  ],
+  "helm-values": {
+    "fileMatch": ["^charts/.*/values\\.yaml$"]
+  },
+  "regexManagers": [
     {
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "groupName": "non-major dependencies",
-      "groupSlug": "non-major",
-      "pinDigests": true
+      "fileMatch": ["^charts/.*/values\\.yaml$"],
+      "matchStrings": [
+        "repository:\s*'(?<depName>.*?)'\n\s*tag:\s*'(?<currentValue>.*?)'",
+        "repository:\s*\"(?<depName>.*?)\"\n\s*tag:\s*\"(?<currentValue>.*?)\"",
+        "repository:\s*(?<depName>.*?)\n\s*tag:\s*(?<currentValue>.*)"
+      ],
+      "datasourceTemplate": "docker"
     }
   ]
 }
