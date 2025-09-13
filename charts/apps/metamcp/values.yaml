@@ -3,6 +3,6 @@ globals:
   timezone: Europe/Amsterdam
 image:
   repository: ghcr.io/metatool-ai/metamcp
-  tag: latest
+  tag: latest@sha256:09e467e3ac40132f4ee11407e792ca5767894b0909d56c270223bdfe64dfcfd2
   pullPolicy: IfNotPresent
 subdomain: metamcp

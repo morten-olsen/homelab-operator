@@ -2,6 +2,6 @@ globals:
   environment: prod
 image:
   repository: ghcr.io/advplyr/audiobookshelf
-  tag: 2.26.1
+  tag: 2.26.1@sha256:5901162ccdf4b44f563ff2012484d5e315d9a1ecd6af86f7fe605ec96bbc5039
   pullPolicy: IfNotPresent
 subdomain: audiobookshelf
