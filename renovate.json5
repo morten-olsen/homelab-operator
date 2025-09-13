@@ -1,0 +1,50 @@
+// .github/renovate.json5 (or renovate.json)
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "autodiscover": false,
+  "packageRules": [
+    {
+      "matchDatasources": ["docker"],
+      "extractVersion": "^(?<version>.*)$",
+      "versioning": "semver",
+      "groupName": "All Docker Images",
+      "pinDigests": true,
+    },
+  ],
+  "helm": {
+    "fileMatch": ["charts/**/values.yaml"],
+    // You generally don't need to list public registries here.
+    // Only add specific entries for *private* registries that require explicit authentication.
+    // Renovate is smart enough to infer common public ones.
+    "registryUrls": {
+      // "my.private.registry.com": "https://my.private.registry.com/v2/" // Example for a private registry
+      }
+  },
+  "regexManagers": [
+    {
+      "fileMatch": ["(^|/)charts/.*values\\.yaml$"],
+      "matchStrings": [
+        // Primary image:
+        // This regex tries to capture the full image name, including the registry if specified.
+        // It's designed to be flexible.
+        "repository:\\s*(?<depName>.*?)\\n\\s*tag:\\s*(?<currentValue>.*?)\\n",
+
+        // Nested images (e.g., piper.image, whisper.image):
+        // This regex accounts for a preceding key and potential 'image:' sub-key.
+        "^(?!\\s*#)[^\\s]*?:(?:\\n\\s*image:)?\\n\\s*repository:\\s*(?<depName>.*?)\\n\\s*tag:\\s*(?<currentValue>.*?)\\n"
+      ],
+      "datasourceTemplate": "docker",
+      // Important: Add a "depNameTemplate" to ensure capture group 1 (depName) is used
+      // which should contain the full path including registry
+      "depNameTemplate": "{{depName}}"
+    }
+  ],
+  // ... rest of your configuration
+  "ignorePaths": ["**/node_modules/**", "**/vendor/**"],
+  "timezone": "Europe/Oslo",
+  "schedule": ["at any time"],
+  "commitMessageTopic": "{{depName}} Docker image",
+  "prConcurrentLimit": 5,
+  "dependencyDashboard": true,
+  "dependencyDashboardAutoclose": true
+}
