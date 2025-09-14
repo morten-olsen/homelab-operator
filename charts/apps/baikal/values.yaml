@@ -4,6 +4,6 @@ globals:
   domain: olsen.cloud
 image:
   repository: docker.io/ckulka/baikal
-  tag: nginx@sha256:27bd9afbb8142c2143b6959c023074b05c86356ded0f589fcb1424ab5fbe0a70
+  tag: nginx@sha256:045918423df00a3f9ec793a819b9acdb055d338b75387926b7d93d753ac1e93a
   pullPolicy: IfNotPresent
 subdomain: baikal
