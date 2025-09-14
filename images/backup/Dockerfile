@@ -1,4 +1,4 @@
-FROM alpine/git:latest@sha256:9c9c6debba3eac25c9230db4bbd1e17d0c27efffdb93e502a47f6f447ab90ac4
+FROM alpine/git:latest@sha256:7e6d53df14a830e62a3bcefb1daf37f9ea1b9405756c975ad2de66234d362fef
 # or a more specific image like a Debian slim or Ubuntu base image.
 RUN apk add --no-cache restic fuse-overlayfs
 WORKDIR /app
