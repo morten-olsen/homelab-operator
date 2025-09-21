@@ -4,6 +4,6 @@ globals:
   timezone: Europe/Amsterdam
 image:
   repository: lscr.io/linuxserver/calibre-web
-  tag: latest@sha256:a833d4cf90333f167871fe6ab1f034c7be7bc3d2061a1563fdb6a8fa27af346e
+  tag: latest@sha256:98a20064168ab284bbb8e048af48c89a5e25650f35a4b217705241af94c1debe
   pullPolicy: IfNotPresent
 subdomain: calibre-web
