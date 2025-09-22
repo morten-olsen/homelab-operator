@@ -40,7 +40,7 @@ importers:
         version: 3.1.0(pg@8.16.3)(sqlite3@5.1.7)
       p-queue:
         specifier: ^8.1.0
-        version: 8.1.0
+        version: 8.1.1
       p-retry:
         specifier: ^6.2.1
         version: 6.2.1
@@ -1467,8 +1467,8 @@ packages:
     resolution: {integrity: sha512-/bjOqmgETBYB5BoEeGVea8dmvHb2m9GLy1E9W43yeyfP6QQCZGFNa+XRceJEuDB6zqr+gKpIAmlLebMpykw/MQ==}
     engines: {node: '>=10'}
 
-  p-queue@8.1.0:
-    resolution: {integrity: sha512-mxLDbbGIBEXTJL0zEx8JIylaj3xQ7Z/7eEVjcF9fJX4DBiH9oqe+oahYnlKKxm0Ci9TlWTyhSHgygxMxjIB2jw==}
+  p-queue@8.1.1:
+    resolution: {integrity: sha512-aNZ+VfjobsWryoiPnEApGGmf5WmNsCo9xu8dfaYamG5qaLP7ClhLN6NgsFe6SwJ2UbLEBK5dv9x8Mn5+RVhMWQ==}
     engines: {node: '>=18'}
 
   p-retry@6.2.1:
@@ -3646,7 +3646,7 @@ snapshots:
       aggregate-error: 3.1.0
     optional: true
 
-  p-queue@8.1.0:
+  p-queue@8.1.1:
     dependencies:
       eventemitter3: 5.0.1
       p-timeout: 6.1.4
