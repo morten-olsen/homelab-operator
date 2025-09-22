@@ -2,6 +2,6 @@ globals:
   environment: prod
 image:
   repository: ollama/ollama
-  tag: 0.11.8@sha256:03eaa1581455ba16e7c954d799e4f44996b60ae668261acd00a0e80a241ed720
+  tag: 0.12.0@sha256:14def4e0b9ac8c91b3ec6f7fa7684c924ffe244541d5fd827d9b89035cc33310
   pullPolicy: IfNotPresent
 subdomain: openwebui
