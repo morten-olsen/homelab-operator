@@ -6,7 +6,7 @@ image:
   repository: ghcr.io/morten-olsen/homelab-operator
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: main@sha256:4fb3a40f6a3e16898978ca606b19460f8388365cffc9929a7355dd3cc184c3db
+  tag: main@sha256:df20d7e4f48bd886cef63ab882de9c6df76b0b297724d1cdf3a79aba8de6f896
 
 imagePullSecrets: []
 nameOverride: ''
