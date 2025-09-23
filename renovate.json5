@@ -5,6 +5,8 @@
   ],
   "packageRules": [
     {
+      "groupName": "Docker images",
+      "groupSlug": "dockerimages",
       "matchDatasources": ["docker"],
       "pinDigests": true
     }
