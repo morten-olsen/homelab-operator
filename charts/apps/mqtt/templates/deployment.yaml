@@ -27,7 +27,7 @@ spec:
               command:
                 - sh
                 - -c
-                - mosquitto_pub -h localhost -p 1884 -t health/ready -m "ready" -q 0 -i readiness_client -V 5
+                - mosquitto_pub -h localhost -p 1883 -t health/ready -m "ready" -q 0 -i readiness_client -V 5
             initialDelaySeconds: 10 # Give broker time to start
             periodSeconds: 20 # Check every 20 seconds
             timeoutSeconds: 5 # Fail if command takes longer than 5 seconds
@@ -37,7 +37,7 @@ spec:
               command:
                 - sh
                 - -c
-                - mosquitto_pub -h localhost -p 1884 -t health/ready -m "ready" -q 0 -i readiness_client -V 5
+                - mosquitto_pub -h localhost -p 1883 -t health/ready -m "ready" -q 0 -i readiness_client -V 5
             initialDelaySeconds: 15
             periodSeconds: 20
             timeoutSeconds: 5

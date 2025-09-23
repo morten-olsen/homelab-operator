@@ -1,5 +1,6 @@
 globals:
   environment: prod
+  domain: olsen.cloud
   timezone: Europe/Amsterdam
 image:
   repository: ghcr.io/metatool-ai/metamcp
