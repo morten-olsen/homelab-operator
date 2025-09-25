@@ -4,6 +4,6 @@ globals:
   domain: olsen.cloud
 image:
   repository: docker.n8n.io/n8nio/n8n
-  tag: latest@sha256:4a159553c22d41f6167c7ddf01e4078c97726af863eae59579f3b2d9e8b12fe2
+  tag: latest@sha256:746f90a251005a1bdbe2b7ebbce7d14eba6eb634739d157e4f9778d61f07dae3
   pullPolicy: IfNotPresent
 subdomain: n8n
