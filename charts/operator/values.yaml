@@ -9,8 +9,8 @@ image:
   tag: main@sha256:df20d7e4f48bd886cef63ab882de9c6df76b0b297724d1cdf3a79aba8de6f896
 
 imagePullSecrets: []
-nameOverride: ''
-fullnameOverride: ''
+nameOverride: ""
+fullnameOverride: ""
 
 storage:
   path: /data/volumes
@@ -25,7 +25,7 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ''
+  name: ""
 
 podAnnotations: {}
 
