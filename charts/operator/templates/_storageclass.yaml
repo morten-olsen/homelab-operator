@@ -1,0 +1,12 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ include "homelab-operator.fullname" . }}-local-path
+  labels:
+    {{- include "homelab-operator.labels" . | nindent 4 }}
+provisioner: reuse-local-path-provisioner
+parameters:
+  # Add any provisioner-specific parameters here
+reclaimPolicy: {{ .Values.storage.reclaimPolicy | default "Retain" }}
+allowVolumeExpansion: {{ .Values.storage.allowVolumeExpansion | default false }}
+volumeBindingMode: {{ .Values.storage.volumeBindingMode | default "WaitForFirstConsumer" }}
