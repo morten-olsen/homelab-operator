@@ -49,7 +49,7 @@
       "sqlite3"
     ],
     "patchedDependencies": {
-      "@kubernetes/client-node": "patches/@kubernetes__client-node.patch"
+      "@kubernetes/client-node": "./patches/@kubernetes__client-node.patch"
     }
   },
   "scripts": {

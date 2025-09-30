@@ -7,7 +7,7 @@ build:
   cluster: {}
   artifacts:
     - image: homelaboperator
-      context: .
+      context: ./images/operator
       docker:
         dockerfile: Dockerfile
 
@@ -16,9 +16,10 @@ manifests:
     releases:
       - name: homelab-operator
         chartPath: charts/operator
+        namespace: homelab
         setValueTemplates:
-          image.repository: '{{.IMAGE_REPO_homelaboperator}}'
-          image.tag: '{{.IMAGE_TAG_homelaboperator}}'
+          image.repository: "{{.IMAGE_REPO_homelaboperator}}"
+          image.tag: "{{.IMAGE_TAG_homelaboperator}}"
 
 deploy:
   # Use kubectl to apply the manifests.
