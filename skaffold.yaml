@@ -4,9 +4,8 @@ metadata:
   name: homelab-operator
 
 build:
-  cluster: {}
   artifacts:
-    - image: homelaboperator
+    - image: zot.olsen.cloud/homelaboperator
       context: ./images/operator
       docker:
         dockerfile: Dockerfile
@@ -18,8 +17,8 @@ manifests:
         chartPath: charts/operator
         namespace: homelab
         setValueTemplates:
-          image.repository: "{{.IMAGE_REPO_homelaboperator}}"
-          image.tag: "{{.IMAGE_TAG_homelaboperator}}"
+          image.repository: "zot.local/homelaboperator"
+          image.tag: "{{.IMAGE_TAG_zot_olsen_cloud_homelaboperator}}"
 
 deploy:
   # Use kubectl to apply the manifests.
