@@ -108,7 +108,7 @@ class PostgresCluster extends CustomResource<typeof specSchema> {
             containers: [
               {
                 name: this.name,
-                image: 'pgvector:pg17-trixie',
+                image: 'pgvector/pgvector:pg17-trixie',
                 ports: [{ containerPort: 5432, name: 'postgres' }],
                 env: [
                   { name: 'POSTGRES_PASSWORD', valueFrom: { secretKeyRef: { name: secretName, key: 'password' } } },
