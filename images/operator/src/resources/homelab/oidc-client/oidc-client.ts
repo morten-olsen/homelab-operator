@@ -79,7 +79,7 @@ class OIDCClient extends CustomResource<typeof specSchema> {
       clientId: this.name,
       configuration: new URL(`/application/o/${this.appName}/.well-known/openid-configuration`, url).toString(),
       configurationIssuer: new URL(`/application/o/${this.appName}/`, url).toString(),
-      authorization: new URL(`/application/o/${this.appName}/authorize/`, url).toString(),
+      authorization: new URL(`/application/o/authorize/`, url).toString(),
       token: new URL(`/application/o/${this.appName}/token/`, url).toString(),
       userinfo: new URL(`/application/o/${this.appName}/userinfo/`, url).toString(),
       endSession: new URL(`/application/o/${this.appName}/end-session/`, url).toString(),
