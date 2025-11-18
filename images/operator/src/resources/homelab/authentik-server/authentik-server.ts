@@ -18,6 +18,7 @@ import { RepoService } from '#bootstrap/repos/repos.ts';
 import { DestinationRule } from '#resources/istio/destination-rule/destination-rule.ts';
 import { NotReadyError } from '#utils/errors.ts';
 import { ExternalHttpService } from '../external-http-service.ts/external-http-service.ts';
+import { HttpService } from '../http-service/http-service.ts';
 
 const specSchema = z.object({
   environment: z.string(),
@@ -44,6 +45,7 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
   #initSecret: Secret<InitSecretData>;
   #service: Service;
   #helmRelease: HelmRelease;
+  #httpService: HttpService;
   #externalHttpService: ExternalHttpService;
   #destinationRule: DestinationRule;
 
@@ -72,6 +74,8 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
     this.#destinationRule.on('changed', this.queueReconcile);
 
     this.#externalHttpService = resourceService.get(ExternalHttpService, this.name, this.namespace);
+
+    this.#httpService = resourceService.get(HttpService, this.name, this.namespace);
   }
 
   public get service() {
@@ -248,6 +252,22 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
         trafficPolicy: {
           tls: {
             mode: 'DISABLE',
+          },
+        },
+      },
+    });
+
+    await this.#httpService.ensure({
+      metadata: {
+        ownerReferences: [this.ref],
+      },
+      spec: {
+        environment: this.spec.environment,
+        subdomain: this.spec.subdomain || 'authentik',
+        destination: {
+          host: this.#service.hostname,
+          port: {
+            number: 80,
           },
         },
       },
