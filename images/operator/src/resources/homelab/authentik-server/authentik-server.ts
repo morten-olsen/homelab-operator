@@ -168,7 +168,7 @@ class AuthentikServer extends CustomResource<typeof specSchema> {
         chart: {
           spec: {
             chart: 'authentik',
-            version: '2025.6.4',
+            version: '2025.10.3',
             sourceRef: {
               apiVersion: 'source.toolkit.fluxcd.io/v1',
               kind: 'HelmRepository',
