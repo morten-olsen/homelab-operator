@@ -31,11 +31,11 @@ class BootstrapService {
 
   public ensure = async () => {
     await this.namespaces.ensure();
-    await this.repos.ensure();
+    // await this.repos.ensure();
     // await this.releases.ensure();
-    await this.cloudflareTunnel.ensure({
-      spec: {},
-    });
+    // await this.cloudflareTunnel.ensure({
+    //  spec: {},
+    //});
   };
 }
 

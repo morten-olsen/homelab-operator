@@ -8,7 +8,7 @@ import { homelab } from '#resources/homelab/homelab.ts';
 const services = new Services();
 const resourceService = services.get(ResourceService);
 
-await resourceService.install(...Object.values(homelab));
+// await resourceService.install(...Object.values(homelab));
 await resourceService.register(...Object.values(resources));
 
 const bootstrapService = services.get(BootstrapService);

@@ -11,7 +11,7 @@ const resources = {
   ...flux,
   ...certManager,
   ...istio,
-  ...homelab,
+  // ...homelab,
 } satisfies Record<string, ResourceClass<ExpectedAny>>;
 
 export { resources };
