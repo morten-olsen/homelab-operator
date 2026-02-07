@@ -43,7 +43,7 @@
     "#bootstrap/*": "./src/bootstrap/*",
     "#utils/*": "./src/utils/*"
   },
-  "packageManager": "pnpm@10.17.1",
+  "packageManager": "pnpm@10.27.0",
   "pnpm": {
     "onlyBuiltDependencies": [
       "sqlite3"
